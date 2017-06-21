@@ -1,0 +1,38 @@
+# circle.yml
+machine:
+  environment:
+    GOROOT: ""
+    GOPATH: "${HOME}/.go_project"
+    PATH: "${GOPATH}/bin:${PATH}"
+    BUILD_PATH: "${GOPATH}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+    GO15VENDOREXPERIMENT: 1
+    GODIST: "go1.8.3.linux-amd64.tar.gz"
+  post:
+    - mkdir -p downloads
+    - test -e downloads/$GODIST || curl -o downloads/$GODIST https://storage.googleapis.com/golang/$GODIST
+    - sudo rm -rf /usr/local/go
+    - sudo tar -C /usr/local -xzf downloads/$GODIST
+dependencies:
+  pre:
+    - pwd
+    - echo "${PROJECT_PATH}"
+    - go get -u -v github.com/Masterminds/glide
+    - glide init --non-interactive
+    - glide install
+  override:
+    - mkdir -p ~/.go_project/src/github.com/${CIRCLE_PROJECT_USERNAME}
+    - ln -s ${HOME}/${CIRCLE_PROJECT_REPONAME} ${BUILD_PATH}
+    - cd $BUILD_PATH && go build -ldflags="-s -w" -v
+test:
+  override:
+    - cd $BUILD_PATH && ./coverage.sh
+  post:
+    - cd $BUILD_PATH && bash <(curl -s https://codecov.io/bash) -f coverage.out
+deployment:
+  release:
+    tag: /v(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)){2}/
+    commands:
+      - go get github.com/mitchellh/gox
+      - go get github.com/tcnksm/ghr
+      - gox -osarch "linux/amd64 linux/arm darwin/amd64 windows/amd64" -output "dist/{{.Dir}}_{{.OS}}_{{.Arch}}"
+      - ghr -t ${GITHUB_TOKEN} -u ${USERNAME} -r ${CIRCLE_PROJECT_REPONAME} --replace $(cat release_tag) dist/
