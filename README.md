@@ -1,4 +1,6 @@
 # glg
+
+[![Join the chat at https://gitter.im/kpango/glg](https://badges.gitter.im/kpango/glg.svg)](https://gitter.im/kpango/glg?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 glg is simple golang logging library
 
 ## Requirement
