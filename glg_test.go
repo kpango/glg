@@ -286,17 +286,30 @@ func TestGlg_SetWriter(t *testing.T) {
 			want: new(bytes.Buffer),
 			msg:  "test",
 		},
+		{
+			name: "Set nil writer",
+			want: nil,
+			msg:  "nil",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := New().SetMode(WRITER).SetWriter(tt.want)
 			g.Info(tt.msg)
-			got := tt.want.(*bytes.Buffer).String()
-			t.Log(got)
-			if !strings.Contains(got, tt.msg) {
-				t.Errorf("Glg.SetWriter() = %v, want %v", got, tt.msg)
+			if tt.want != nil {
+				got := tt.want.(*bytes.Buffer).String()
+				t.Log(got)
+				if !strings.Contains(got, tt.msg) {
+					t.Errorf("Glg.SetWriter() = %v, want %v", got, tt.msg)
+				}
+			} else {
+				w, ok := g.writer[INFO]
+				if ok && w != nil {
+					t.Errorf("Glg.SetWriter() = %v, want %v", w, tt.want)
+				}
 			}
+
 		})
 	}
 }
@@ -312,16 +325,28 @@ func TestGlg_AddWriter(t *testing.T) {
 			want: new(bytes.Buffer),
 			msg:  "test",
 		},
+		{
+			name: "Add nil writer",
+			want: nil,
+			msg:  "nil",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var writer io.Writer = new(bytes.Buffer)
 			g := New().SetMode(WRITER).AddWriter(tt.want).AddWriter(writer)
 			g.Info(tt.msg)
-			got := tt.want.(*bytes.Buffer).String()
-			want := writer.(*bytes.Buffer).String()
-			if !reflect.DeepEqual(got, want) {
-				t.Errorf("Glg.AddWriter() = %vwant %v", got, want)
+			if tt.want != nil {
+				got := tt.want.(*bytes.Buffer).String()
+				want := writer.(*bytes.Buffer).String()
+				if !reflect.DeepEqual(got, want) {
+					t.Errorf("Glg.AddWriter() = %vwant %v", got, want)
+				}
+			} else {
+				w, ok := g.writer[INFO]
+				if ok && w != writer {
+					t.Errorf("Glg.AddWriter() = %v, want %v", w, tt.want)
+				}
 			}
 		})
 	}
@@ -392,15 +417,27 @@ func TestGlg_SetLevelWriter(t *testing.T) {
 			writer: new(bytes.Buffer),
 			level:  ERR,
 		},
+		{
+			name:   "Set INFO level nil writer",
+			writer: nil,
+			level:  INFO,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := New()
 			g.SetLevelWriter(tt.level, tt.writer)
-			got, ok := g.writer[tt.level]
-			if !ok || !reflect.DeepEqual(got, tt.writer) {
-				t.Errorf("Glg.SetLevelWriter() = %v, want %v", got, tt.writer)
+			if tt.writer != nil {
+				got, ok := g.writer[tt.level]
+				if !ok || !reflect.DeepEqual(got, tt.writer) {
+					t.Errorf("Glg.SetLevelWriter() = %v, want %v", got, tt.writer)
+				}
+			} else {
+				got, ok := g.writer[tt.level]
+				if ok && got != nil {
+					t.Errorf("Glg.SetLevelWriter() = %v, want %v", got, tt.writer)
+				}
 			}
 		})
 	}
@@ -408,29 +445,51 @@ func TestGlg_SetLevelWriter(t *testing.T) {
 
 func TestGlg_AddLevelWriter(t *testing.T) {
 	tests := []struct {
+		glg    *Glg
 		name   string
 		writer io.Writer
 		level  string
 	}{
 		{
+			glg:    New(),
 			name:   "Info level",
 			writer: new(bytes.Buffer),
 			level:  INFO,
 		},
 		{
+			glg:    New(),
 			name:   "Error level",
 			writer: new(bytes.Buffer),
 			level:  ERR,
+		},
+		{
+			glg:    New().SetLevelWriter(DEBG, os.Stdout),
+			name:   "Append DEBG level",
+			writer: new(bytes.Buffer),
+			level:  DEBG,
+		},
+		{
+			glg:    New(),
+			name:   "Add INFO level nil writer",
+			writer: nil,
+			level:  INFO,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := New()
+			g := tt.glg
 			g.AddLevelWriter(tt.level, tt.writer)
-			got, ok := g.writer[tt.level]
-			if !ok || !reflect.DeepEqual(got, tt.writer) {
-				t.Errorf("Glg.AddLevelWriter() = %v, want %v", got, tt.writer)
+			if tt.writer != nil {
+				got, ok := g.writer[tt.level]
+				if !ok || !reflect.DeepEqual(got, tt.writer) && tt.level != DEBG {
+					t.Errorf("Glg.AddLevelWriter() = %v, want %v", got, tt.writer)
+				}
+			} else {
+				got, ok := g.writer[tt.level]
+				if ok && got != nil {
+					t.Errorf("Glg.AddLevelWriter() = %v, want %v", got, tt.writer)
+				}
 			}
 		})
 	}
@@ -555,12 +614,25 @@ func TestFileWriter(t *testing.T) {
 			path: "./error.log",
 			want: "./error.log",
 		},
+		{
+			name: "empty",
+			path: "",
+			want: "",
+		},
+		{
+			name: "root file log",
+			path: "/root.log",
+			want: "/root.log",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := FileWriter(tt.path, 0755).Name()
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FileWriter() = %v, want %v", got, tt.want)
+			f := FileWriter(tt.path, 0755)
+			if f != nil {
+				got := f.Name()
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("FileWriter() = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}
@@ -575,6 +647,7 @@ func TestGlg_HTTPLogger(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
+		mode int
 	}{
 		{
 			name: "http logger simple",
@@ -582,6 +655,7 @@ func TestGlg_HTTPLogger(t *testing.T) {
 				name: "simple",
 				uri:  "/",
 			},
+			mode: WRITER,
 		},
 		{
 			name: "http logger err",
@@ -589,6 +663,15 @@ func TestGlg_HTTPLogger(t *testing.T) {
 				name: "err",
 				uri:  "err",
 			},
+			mode: WRITER,
+		},
+		{
+			name: "none logger simple",
+			args: args{
+				name: "none",
+				uri:  "/",
+			},
+			mode: NONE,
 		},
 	}
 	for _, tt := range tests {
@@ -605,11 +688,11 @@ func TestGlg_HTTPLogger(t *testing.T) {
 			want := fmt.Sprintf("Method: %s\tURI: %s\tName: %s",
 				req.Method, req.RequestURI, tt.args.name)
 
-			g := New().SetMode(WRITER).SetWriter(w)
+			g := New().SetMode(tt.mode).SetWriter(w)
 
 			g.HTTPLogger(tt.args.name, handler).ServeHTTP(rr, req)
 
-			if !strings.Contains(w.String(), want) {
+			if !strings.Contains(w.String(), want) && tt.mode != NONE {
 				t.Errorf("Glg.HTTPLogger() = %v, want %v", w.String(), want)
 			}
 		})
@@ -624,6 +707,7 @@ func TestGlg_HTTPLoggerFunc(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
+		mode int
 	}{
 		{
 			name: "http logger simple",
@@ -631,6 +715,7 @@ func TestGlg_HTTPLoggerFunc(t *testing.T) {
 				name: "simple",
 				uri:  "/",
 			},
+			mode: WRITER,
 		},
 		{
 			name: "http logger err",
@@ -638,6 +723,15 @@ func TestGlg_HTTPLoggerFunc(t *testing.T) {
 				name: "err",
 				uri:  "err",
 			},
+			mode: WRITER,
+		},
+		{
+			name: "none logger simple",
+			args: args{
+				name: "none",
+				uri:  "/",
+			},
+			mode: NONE,
 		},
 	}
 	for _, tt := range tests {
@@ -653,12 +747,12 @@ func TestGlg_HTTPLoggerFunc(t *testing.T) {
 			want := fmt.Sprintf("Method: %s\tURI: %s\tName: %s",
 				req.Method, req.RequestURI, tt.args.name)
 
-			g := New().SetMode(WRITER).SetWriter(w)
+			g := New().SetMode(tt.mode).SetWriter(w)
 
 			g.HTTPLoggerFunc(tt.args.name, func(w http.ResponseWriter, r *http.Request) {}).ServeHTTP(rr, req)
 
-			if !strings.Contains(w.String(), want) {
-				t.Errorf("Glg.HTTPLoggerFunc() = %v, want %v", w.String(), want)
+			if !strings.Contains(w.String(), want) && tt.mode != NONE {
+				t.Errorf("Glg.HTTPLogger() = %v, want %v", w.String(), want)
 			}
 		})
 	}
@@ -984,12 +1078,14 @@ func TestWhite(t *testing.T) {
 
 func TestGlg_out(t *testing.T) {
 	tests := []struct {
+		glg    *Glg
 		name   string
 		level  string
 		format string
 		val    []interface{}
 	}{
 		{
+			glg:    New().SetMode(WRITER),
 			name:   "sample info",
 			level:  INFO,
 			format: "%d%s%f",
@@ -1000,7 +1096,63 @@ func TestGlg_out(t *testing.T) {
 			},
 		},
 		{
+			glg:    New().SetMode(WRITER),
 			name:   "sample log",
+			level:  LOG,
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			glg:    New().SetMode(NONE),
+			name:   "no log",
+			level:  LOG,
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			glg:    New().SetMode(STD),
+			name:   "no log",
+			level:  LOG,
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			glg:    New().SetMode(BOTH),
+			name:   "no log",
+			level:  LOG,
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			glg:    New().SetMode(STD).DisableColor(),
+			name:   "no log",
+			level:  LOG,
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			glg:    New().SetMode(BOTH).DisableColor(),
+			name:   "no log",
 			level:  LOG,
 			format: "%d%s%f",
 			val: []interface{}{
@@ -1013,10 +1165,10 @@ func TestGlg_out(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			g := New().SetMode(WRITER).SetWriter(buf)
+			g := tt.glg.SetWriter(buf)
 			g.out(tt.level, tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
-			if !strings.Contains(buf.String(), want) {
+			if !strings.Contains(buf.String(), want) && tt.glg.GetCurrentMode() != NONE && tt.glg.GetCurrentMode() != STD {
 				t.Errorf("Glg.out() = got %v want %v", buf.String(), want)
 			}
 		})
