@@ -3,6 +3,11 @@
 *.a
 *.so
 
+# sandbox files
+*.svg
+*.log
+*.out
+
 # Folders
 _obj
 _test
