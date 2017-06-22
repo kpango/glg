@@ -1,3 +1,4 @@
+// glg package can quickly output that are colored and leveled logs with simple syntax
 package glg
 
 import (
