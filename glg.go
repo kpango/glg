@@ -56,6 +56,9 @@ const (
 var (
 	glg  *Glg
 	once sync.Once
+
+	// exit for Faltal error
+	exit = os.Exit
 )
 
 func init() {
@@ -108,9 +111,6 @@ func Get() *Glg {
 // SetMode sets glg logging mode
 func (g *Glg) SetMode(mode int) *Glg {
 	g.mu.Lock()
-	if mode == NONE {
-		g.writer = nil
-	}
 	g.mode = mode
 	g.mu.Unlock()
 	return g
@@ -124,8 +124,8 @@ func (g *Glg) GetCurrentMode() int {
 // InitWriter is initialize glg writer
 func (g *Glg) InitWriter() *Glg {
 	g.mu.Lock()
+	defer g.mu.Unlock()
 	g = New()
-	g.mu.Unlock()
 	return g
 }
 
@@ -403,7 +403,6 @@ func (g *Glg) out(level, format string, val ...interface{}) error {
 			_, err = fmt.Fprintf(g.std[level], str, val...)
 			g.mu.Unlock()
 		}
-
 		if err != nil {
 			return err
 		}
@@ -643,7 +642,7 @@ func (g *Glg) Fatalf(format string, val ...interface{}) {
 			panic(err)
 		}
 	}
-	os.Exit(1)
+	exit(1)
 }
 
 // Fatal outputs Failed log and exit program
