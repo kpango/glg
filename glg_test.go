@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"reflect"
 	"strings"
-	"sync"
 	"testing"
 )
 
@@ -539,20 +539,27 @@ func TestGlg_DisableColor(t *testing.T) {
 }
 
 func TestFileWriter(t *testing.T) {
-	type args struct {
-		path string
-		perm os.FileMode
-	}
+
 	tests := []struct {
 		name string
-		args args
-		want *os.File
+		path string
+		want string
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample file log",
+			path: "./sample.log",
+			want: "./sample.log",
+		},
+		{
+			name: "error file log",
+			path: "./error.log",
+			want: "./error.log",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := FileWriter(tt.args.path, tt.args.perm); !reflect.DeepEqual(got, tt.want) {
+			got := FileWriter(tt.path, 0755).Name()
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("FileWriter() = %v, want %v", got, tt.want)
 			}
 		})
@@ -560,76 +567,98 @@ func TestFileWriter(t *testing.T) {
 }
 
 func TestGlg_HTTPLogger(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
+
 	type args struct {
-		name    string
-		handler http.Handler
+		name string
+		uri  string
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   http.Handler
+		name string
+		args args
 	}{
-	// TODO: Add test cases.
+		{
+			name: "http logger simple",
+			args: args{
+				name: "simple",
+				uri:  "/",
+			},
+		},
+		{
+			name: "http logger err",
+			args: args{
+				name: "err",
+				uri:  "err",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
+			w := new(bytes.Buffer)
+
+			req, err := http.NewRequest(http.MethodGet, tt.args.uri, nil)
+			if err != nil {
+				t.Fatal(err)
 			}
-			if got := g.HTTPLogger(tt.args.name, tt.args.handler); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Glg.HTTPLogger() = %v, want %v", got, tt.want)
+			rr := httptest.NewRecorder()
+
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+			want := fmt.Sprintf("Method: %s\tURI: %s\tName: %s",
+				req.Method, req.RequestURI, tt.args.name)
+
+			g := New().SetMode(WRITER).SetWriter(w)
+
+			g.HTTPLogger(tt.args.name, handler).ServeHTTP(rr, req)
+
+			if !strings.Contains(w.String(), want) {
+				t.Errorf("Glg.HTTPLogger() = %v, want %v", w.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_HTTPLoggerFunc(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
 	type args struct {
 		name string
-		hf   http.HandlerFunc
+		uri  string
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   http.Handler
+		name string
+		args args
 	}{
-	// TODO: Add test cases.
+		{
+			name: "http logger simple",
+			args: args{
+				name: "simple",
+				uri:  "/",
+			},
+		},
+		{
+			name: "http logger err",
+			args: args{
+				name: "err",
+				uri:  "err",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
+			w := new(bytes.Buffer)
+
+			req, err := http.NewRequest(http.MethodGet, tt.args.uri, nil)
+			if err != nil {
+				t.Fatal(err)
 			}
-			if got := g.HTTPLoggerFunc(tt.args.name, tt.args.hf); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Glg.HTTPLoggerFunc() = %v, want %v", got, tt.want)
+			rr := httptest.NewRecorder()
+
+			want := fmt.Sprintf("Method: %s\tURI: %s\tName: %s",
+				req.Method, req.RequestURI, tt.args.name)
+
+			g := New().SetMode(WRITER).SetWriter(w)
+
+			g.HTTPLoggerFunc(tt.args.name, func(w http.ResponseWriter, r *http.Request) {}).ServeHTTP(rr, req)
+
+			if !strings.Contains(w.String(), want) {
+				t.Errorf("Glg.HTTPLoggerFunc() = %v, want %v", w.String(), want)
 			}
 		})
 	}
@@ -637,20 +666,48 @@ func TestGlg_HTTPLoggerFunc(t *testing.T) {
 
 func TestHTTPLogger(t *testing.T) {
 	type args struct {
-		name    string
-		handler http.Handler
+		name string
+		uri  string
 	}
 	tests := []struct {
 		name string
 		args args
-		want http.Handler
 	}{
-	// TODO: Add test cases.
+		{
+			name: "http logger simple",
+			args: args{
+				name: "simple",
+				uri:  "/",
+			},
+		},
+		{
+			name: "http logger err",
+			args: args{
+				name: "err",
+				uri:  "err",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := HTTPLogger(tt.args.name, tt.args.handler); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("HTTPLogger() = %v, want %v", got, tt.want)
+			w := new(bytes.Buffer)
+
+			req, err := http.NewRequest(http.MethodGet, tt.args.uri, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rr := httptest.NewRecorder()
+
+			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+			want := fmt.Sprintf("Method: %s\tURI: %s\tName: %s",
+				req.Method, req.RequestURI, tt.args.name)
+
+			Get().SetMode(WRITER).SetWriter(w)
+
+			HTTPLogger(tt.args.name, handler).ServeHTTP(rr, req)
+
+			if !strings.Contains(w.String(), want) {
+				t.Errorf("HTTPLogger() = %v, want %v", w.String(), want)
 			}
 		})
 	}
@@ -659,38 +716,66 @@ func TestHTTPLogger(t *testing.T) {
 func TestHTTPLoggerFunc(t *testing.T) {
 	type args struct {
 		name string
-		hf   http.HandlerFunc
+		uri  string
 	}
 	tests := []struct {
 		name string
 		args args
-		want http.Handler
 	}{
-	// TODO: Add test cases.
+		{
+			name: "http logger simple",
+			args: args{
+				name: "simple",
+				uri:  "/",
+			},
+		},
+		{
+			name: "http logger err",
+			args: args{
+				name: "err",
+				uri:  "err",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := HTTPLoggerFunc(tt.args.name, tt.args.hf); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("HTTPLoggerFunc() = %v, want %v", got, tt.want)
+			w := new(bytes.Buffer)
+
+			req, err := http.NewRequest(http.MethodGet, tt.args.uri, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rr := httptest.NewRecorder()
+
+			want := fmt.Sprintf("Method: %s\tURI: %s\tName: %s",
+				req.Method, req.RequestURI, tt.args.name)
+
+			Get().SetMode(WRITER).SetWriter(w)
+
+			HTTPLoggerFunc(tt.args.name, func(w http.ResponseWriter, r *http.Request) {}).ServeHTTP(rr, req)
+
+			if !strings.Contains(w.String(), want) {
+				t.Errorf("HTTPLoggerFunc() = %v, want %v", w.String(), want)
 			}
 		})
 	}
 }
 
 func TestColorless(t *testing.T) {
-	type args struct {
-		str string
-	}
 	tests := []struct {
 		name string
-		args args
+		txt  string
 		want string
 	}{
-	// TODO: Add test cases.
+		{
+			name: "colorless",
+			txt:  "message",
+			want: "message",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Colorless(tt.args.str); got != tt.want {
+			if got := Colorless(tt.txt); got != tt.want {
 				t.Errorf("Colorless() = %v, want %v", got, tt.want)
 			}
 		})
@@ -698,19 +783,19 @@ func TestColorless(t *testing.T) {
 }
 
 func TestRed(t *testing.T) {
-	type args struct {
-		str string
-	}
 	tests := []struct {
 		name string
-		args args
+		txt  string
 		want string
 	}{
-	// TODO: Add test cases.
+		{
+			name: "red",
+			txt:  "message",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Red(tt.args.str); got != tt.want {
+			if got := Red(tt.txt); !strings.HasPrefix(got, "\033[31m") || !strings.HasSuffix(got, "\033[39m") {
 				t.Errorf("Red() = %v, want %v", got, tt.want)
 			}
 		})
@@ -718,19 +803,19 @@ func TestRed(t *testing.T) {
 }
 
 func TestGreen(t *testing.T) {
-	type args struct {
-		str string
-	}
 	tests := []struct {
 		name string
-		args args
+		txt  string
 		want string
 	}{
-	// TODO: Add test cases.
+		{
+			name: "green",
+			txt:  "message",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Green(tt.args.str); got != tt.want {
+			if got := Green(tt.txt); !strings.HasPrefix(got, "\033[32m") || !strings.HasSuffix(got, "\033[39m") {
 				t.Errorf("Green() = %v, want %v", got, tt.want)
 			}
 		})
@@ -738,19 +823,19 @@ func TestGreen(t *testing.T) {
 }
 
 func TestOrange(t *testing.T) {
-	type args struct {
-		str string
-	}
 	tests := []struct {
 		name string
-		args args
+		txt  string
 		want string
 	}{
-	// TODO: Add test cases.
+		{
+			name: "orange",
+			txt:  "message",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Orange(tt.args.str); got != tt.want {
+			if got := Orange(tt.txt); !strings.HasPrefix(got, "\033[33m") || !strings.HasSuffix(got, "\033[39m") {
 				t.Errorf("Orange() = %v, want %v", got, tt.want)
 			}
 		})
@@ -758,19 +843,19 @@ func TestOrange(t *testing.T) {
 }
 
 func TestPurple(t *testing.T) {
-	type args struct {
-		str string
-	}
 	tests := []struct {
 		name string
-		args args
+		txt  string
 		want string
 	}{
-	// TODO: Add test cases.
+		{
+			name: "purple",
+			txt:  "message",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Purple(tt.args.str); got != tt.want {
+			if got := Purple(tt.txt); !strings.HasPrefix(got, "\033[34m") || !strings.HasSuffix(got, "\033[39m") {
 				t.Errorf("Purple() = %v, want %v", got, tt.want)
 			}
 		})
@@ -778,19 +863,19 @@ func TestPurple(t *testing.T) {
 }
 
 func TestCyan(t *testing.T) {
-	type args struct {
-		str string
-	}
 	tests := []struct {
 		name string
-		args args
+		txt  string
 		want string
 	}{
-	// TODO: Add test cases.
+		{
+			name: "cyan",
+			txt:  "message",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Cyan(tt.args.str); got != tt.want {
+			if got := Cyan(tt.txt); !strings.HasPrefix(got, "\033[36m") || !strings.HasSuffix(got, "\033[39m") {
 				t.Errorf("Cyan() = %v, want %v", got, tt.want)
 			}
 		})
@@ -798,19 +883,19 @@ func TestCyan(t *testing.T) {
 }
 
 func TestYellow(t *testing.T) {
-	type args struct {
-		str string
-	}
 	tests := []struct {
 		name string
-		args args
+		txt  string
 		want string
 	}{
-	// TODO: Add test cases.
+		{
+			name: "yellow",
+			txt:  "message",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Yellow(tt.args.str); got != tt.want {
+			if got := Yellow(tt.txt); !strings.HasPrefix(got, "\033[93m") || !strings.HasSuffix(got, "\033[39m") {
 				t.Errorf("Yellow() = %v, want %v", got, tt.want)
 			}
 		})
@@ -818,19 +903,19 @@ func TestYellow(t *testing.T) {
 }
 
 func TestBrown(t *testing.T) {
-	type args struct {
-		str string
-	}
 	tests := []struct {
 		name string
-		args args
+		txt  string
 		want string
 	}{
-	// TODO: Add test cases.
+		{
+			name: "brown",
+			txt:  "message",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Brown(tt.args.str); got != tt.want {
+			if got := Brown(tt.txt); !strings.HasPrefix(got, "\033[96m") || !strings.HasSuffix(got, "\033[39m") {
 				t.Errorf("Brown() = %v, want %v", got, tt.want)
 			}
 		})
@@ -838,19 +923,19 @@ func TestBrown(t *testing.T) {
 }
 
 func TestGray(t *testing.T) {
-	type args struct {
-		str string
-	}
 	tests := []struct {
 		name string
-		args args
+		txt  string
 		want string
 	}{
-	// TODO: Add test cases.
+		{
+			name: "gray",
+			txt:  "message",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Gray(tt.args.str); got != tt.want {
+			if got := Gray(tt.txt); !strings.HasPrefix(got, "\033[90m") || !strings.HasSuffix(got, "\033[39m") {
 				t.Errorf("Gray() = %v, want %v", got, tt.want)
 			}
 		})
@@ -858,19 +943,19 @@ func TestGray(t *testing.T) {
 }
 
 func TestBlack(t *testing.T) {
-	type args struct {
-		str string
-	}
 	tests := []struct {
 		name string
-		args args
+		txt  string
 		want string
 	}{
-	// TODO: Add test cases.
+		{
+			name: "black",
+			txt:  "message",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Black(tt.args.str); got != tt.want {
+			if got := Black(tt.txt); !strings.HasPrefix(got, "\033[30m") || !strings.HasSuffix(got, "\033[39m") {
 				t.Errorf("Black() = %v, want %v", got, tt.want)
 			}
 		})
@@ -878,19 +963,19 @@ func TestBlack(t *testing.T) {
 }
 
 func TestWhite(t *testing.T) {
-	type args struct {
-		str string
-	}
 	tests := []struct {
 		name string
-		args args
+		txt  string
 		want string
 	}{
-	// TODO: Add test cases.
+		{
+			name: "white",
+			txt:  "message",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := White(tt.args.str); got != tt.want {
+			if got := White(tt.txt); !strings.HasPrefix(got, "\033[97m") || !strings.HasSuffix(got, "\033[39m") {
 				t.Errorf("White() = %v, want %v", got, tt.want)
 			}
 		})
@@ -898,1300 +983,1449 @@ func TestWhite(t *testing.T) {
 }
 
 func TestGlg_out(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
+	tests := []struct {
+		name   string
 		level  string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample info",
+			level:  INFO,
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample log",
+			level:  LOG,
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.out(tt.args.level, tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.out() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.out(tt.level, tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.out() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Log(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample log",
+			val: []interface{}{
+				"sample log",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Log(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Log() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Log(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Log() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Logf(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample log",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample log",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Logf(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Logf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Logf(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Log() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestLog(t *testing.T) {
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample log",
+			val: []interface{}{
+				"sample log",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Log(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Log() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Log(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Log() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestLogf(t *testing.T) {
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample info",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample log",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Logf(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Logf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Logf(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Logf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Info(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample info",
+			val: []interface{}{
+				"sample info",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Info(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Info() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Info(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Info() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Infof(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample info",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample info",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Infof(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Infof() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Infof(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Infof() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestInfo(t *testing.T) {
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample info",
+			val: []interface{}{
+				"sample info",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Info(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Info() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Info(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Info() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestInfof(t *testing.T) {
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample info",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample info",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Infof(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Infof() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Infof(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Infof() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Success(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample success",
+			val: []interface{}{
+				"sample success",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Success(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Success() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Success(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Success() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Successf(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample success",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample success",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Successf(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Successf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Successf(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Successf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestSuccess(t *testing.T) {
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample success",
+			val: []interface{}{
+				"sample success",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Success(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Success() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Success(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Success() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
+
 }
 
 func TestSuccessf(t *testing.T) {
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample success",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample success",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Successf(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Successf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Successf(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Successf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Debug(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample debug",
+			val: []interface{}{
+				"sample debug",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Debug(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Debug() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Debug(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Debug() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Debugf(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample debug",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample debug",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Debugf(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Debugf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Debugf(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Debugf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestDebug(t *testing.T) {
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample debug",
+			val: []interface{}{
+				"sample debug",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Debug(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Debug() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Debug(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Debug() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestDebugf(t *testing.T) {
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample debug",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample debug",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Debugf(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Debugf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Debugf(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Debugf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Warn(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample warn",
+			val: []interface{}{
+				"sample warn",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Warn(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Warn() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Warn(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Warn() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Warnf(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample warnf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample warnf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Warnf(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Warnf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Warnf(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Warnf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestWarn(t *testing.T) {
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample warn",
+			val: []interface{}{
+				"sample warn",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Warn(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Warn() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Warn(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Warn() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestWarnf(t *testing.T) {
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample warnf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample warnf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Warnf(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Warnf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Warnf(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Warnf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_CustomLog(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
+	tests := []struct {
+		name  string
 		level string
 		val   []interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:  "sample custom",
+			level: "custom",
+			val: []interface{}{
+				"sample custom",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.CustomLog(tt.args.level, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.CustomLog() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).AddStdLevel(tt.level).SetWriter(buf)
+			g.CustomLog(tt.level, tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.CustomLog() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_CustomLogf(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
-		level  string
-		format string
-		val    []interface{}
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name   string
+		format string
+		level  string
+		val    []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample customf",
+			level:  "custom",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample customf",
+			level:  "custom",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.CustomLogf(tt.args.level, tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.CustomLogf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).AddStdLevel(tt.level).SetWriter(buf)
+			g.CustomLogf(tt.level, tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Warnf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestCustomLog(t *testing.T) {
-	type args struct {
+	tests := []struct {
+		name  string
 		level string
 		val   []interface{}
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:  "sample custom",
+			level: "custom",
+			val: []interface{}{
+				"sample custom",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := CustomLog(tt.args.level, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("CustomLog() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).AddStdLevel(tt.level).SetWriter(buf)
+			CustomLog(tt.level, tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("CustomLog() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestCustomLogf(t *testing.T) {
-	type args struct {
-		level  string
-		format string
-		val    []interface{}
-	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name   string
+		format string
+		level  string
+		val    []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample customf",
+			level:  "custom",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample customf",
+			level:  "custom",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := CustomLogf(tt.args.level, tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("CustomLogf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).AddStdLevel(tt.level).SetWriter(buf)
+			CustomLogf(tt.level, tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Warnf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Print(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample print",
+			val: []interface{}{
+				"sample print",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Print(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Print() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Print(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Print() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Println(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample println",
+			val: []interface{}{
+				"sample println",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Println(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Println() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Println(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Println() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Printf(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample printf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample printf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Printf(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Printf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Printf(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Printf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestPrint(t *testing.T) {
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample print",
+			val: []interface{}{
+				"sample print",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Print(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Print() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Print(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Print() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestPrintln(t *testing.T) {
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample println",
+			val: []interface{}{
+				"sample println",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Println(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Println() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Println(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Println() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestPrintf(t *testing.T) {
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample printf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample printf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Printf(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Printf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Printf(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Printf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Error(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample error",
+			val: []interface{}{
+				"sample error",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Error(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Error() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Error(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Error() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Errorf(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample errorf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample errorf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Errorf(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Errorf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Errorf(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Errorf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestError(t *testing.T) {
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample error",
+			val: []interface{}{
+				"sample error",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Error(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Error() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Error(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Error() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestErrorf(t *testing.T) {
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample errorf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample errorf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Errorf(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Errorf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Errorf(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Errorf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Fail(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample fail",
+			val: []interface{}{
+				"sample fail",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Fail(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Fail() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Fail(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Fail() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Failf(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample failf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample failf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
-			}
-			if err := g.Failf(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Glg.Failf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			g.Failf(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Failf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestFail(t *testing.T) {
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample fail",
+			val: []interface{}{
+				"sample fail",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Fail(tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Fail() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Fail(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Fail() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestFailf(t *testing.T) {
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample failf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample failf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Failf(tt.args.format, tt.args.val...); (err != nil) != tt.wantErr {
-				t.Errorf("Failf() error = %v, wantErr %v", err, tt.wantErr)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			Failf(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Failf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
 }
 
 func TestGlg_Fatal(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample fatal",
+			val: []interface{}{
+				"aaa",
+			},
+		},
+		{
+			name: "sample fatal",
+			val: []interface{}{
+				"aaa",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			testExit(0, func() {
+				g.Fatal(tt.val...)
+			})
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Fatal() = got %v want %v", buf.String(), want)
 			}
-			g.Fatal(tt.args.val...)
 		})
 	}
 }
 
 func TestGlg_Fatalln(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
+		name string
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample fatalln",
+			val: []interface{}{
+				"aaa",
+			},
+		},
+		{
+			name: "sample fatalln",
+			val: []interface{}{
+				"aaa",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			testExit(0, func() {
+				g.Fatalln(tt.val...)
+			})
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Fatalln() = got %v want %v", buf.String(), want)
 			}
-			g.Fatalln(tt.args.val...)
 		})
 	}
 }
 
 func TestGlg_Fatalf(t *testing.T) {
-	type fields struct {
-		writer  map[string]io.Writer
-		std     map[string]io.Writer
-		colors  map[string]func(string) string
-		mode    int
-		isColor bool
-		mu      *sync.Mutex
-	}
-	type args struct {
-		format string
-		val    []interface{}
-	}
 	tests := []struct {
 		name   string
-		fields fields
-		args   args
+		format string
+		val    []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample fatalf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample fatalf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				writer:  tt.fields.writer,
-				std:     tt.fields.std,
-				colors:  tt.fields.colors,
-				mode:    tt.fields.mode,
-				isColor: tt.fields.isColor,
-				mu:      tt.fields.mu,
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			testExit(0, func() {
+				g.Fatalf(tt.format, tt.val...)
+			})
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Fatalf() = got %v want %v", buf.String(), want)
 			}
-			g.Fatalf(tt.args.format, tt.args.val...)
 		})
 	}
 }
 
 func TestFatal(t *testing.T) {
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
 		name string
-		args args
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample fatal",
+			val: []interface{}{
+				"aaa",
+			},
+		},
+		{
+			name: "sample fatal",
+			val: []interface{}{
+				"aaa",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Fatal(tt.args.val...)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			testExit(0, func() {
+				Fatal(tt.val...)
+			})
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Fatal() = got %v want %v", buf.String(), want)
+			}
 		})
 	}
 }
 
 func TestFatalf(t *testing.T) {
-	type args struct {
+	tests := []struct {
+		name   string
 		format string
 		val    []interface{}
-	}
-	tests := []struct {
-		name string
-		args args
 	}{
-	// TODO: Add test cases.
+		{
+			name:   "sample fatalf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample fatalf",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Fatalf(tt.args.format, tt.args.val...)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			testExit(0, func() {
+				Fatalf(tt.format, tt.val...)
+			})
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Fatalf() = got %v want %v", buf.String(), want)
+			}
 		})
 	}
 }
 
 func TestFatalln(t *testing.T) {
-	type args struct {
-		val []interface{}
-	}
 	tests := []struct {
 		name string
-		args args
+		val  []interface{}
 	}{
-	// TODO: Add test cases.
+		{
+			name: "sample fatalln",
+			val: []interface{}{
+				"aaa",
+			},
+		},
+		{
+			name: "sample fatalln",
+			val: []interface{}{
+				"aaa",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			Fatalln(tt.args.val...)
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			testExit(0, func() {
+				Fatalln(tt.val...)
+			})
+			want := fmt.Sprintf("%v", tt.val...)
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Fatalln() = got %v want %v", buf.String(), want)
+			}
 		})
 	}
 }

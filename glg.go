@@ -207,6 +207,7 @@ func (g *Glg) AddLevelWriter(level string, writer io.Writer) *Glg {
 func (g *Glg) AddStdLevel(level string) *Glg {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	g.writer[level] = g.writer[INFO]
 	g.std[level] = os.Stdout
 	return g
 }
@@ -215,6 +216,7 @@ func (g *Glg) AddStdLevel(level string) *Glg {
 func (g *Glg) AddErrLevel(level string) *Glg {
 	g.mu.Lock()
 	defer g.mu.Unlock()
+	g.writer[level] = g.writer[ERR]
 	g.std[level] = os.Stderr
 	return g
 }
