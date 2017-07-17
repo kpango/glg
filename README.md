@@ -70,7 +70,7 @@ go get github.com/kpango/glg
 
 	}))
 
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe("port", nil)
 
 	// fatal logging
 	glg.Fatalln("fatal")
