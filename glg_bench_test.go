@@ -52,11 +52,11 @@ func BenchmarkDefaultLog(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			log.Printf("\t["+"LOG"+"]:\t"+"%v"+"\n", testMsg)
-			log.Printf("\t["+"LOG"+"]:\t"+"%v"+"\n", testMsg)
-			log.Printf("\t["+"LOG"+"]:\t"+"%v"+"\n", testMsg)
-			log.Printf("\t["+"LOG"+"]:\t"+"%v"+"\n", testMsg)
-			log.Printf("\t["+"LOG"+"]:\t"+"%v"+"\n", testMsg)
+			log.Println("\t[" + "LOG" + "]:\t" + testMsg)
+			log.Println("\t[" + "LOG" + "]:\t" + testMsg)
+			log.Println("\t[" + "LOG" + "]:\t" + testMsg)
+			log.Println("\t[" + "LOG" + "]:\t" + testMsg)
+			log.Println("\t[" + "LOG" + "]:\t" + testMsg)
 		}
 	})
 }
