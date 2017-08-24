@@ -392,18 +392,18 @@ func (g *Glg) out(level, format string, val ...interface{}) error {
 	buf = time.Now().AppendFormat(buf[:0], "2006-01-02 15:04:05")
 
 	var str = *(*string)(unsafe.Pointer(&buf)) +
-		"\t[" + level + "]:\t" + format + "\n"
+		"\t[" + level + "]:\t" + format
 
 	var err error
 
 	if g.mode == STD || g.mode == BOTH {
 		if _, ok := g.colors[level]; ok && g.isColor {
 			g.mu.Lock()
-			_, err = fmt.Fprintf(g.std[level], g.colors[level](str), val...)
+			_, err = fmt.Fprintf(g.std[level], g.colors[level](str)+"\n", val...)
 			g.mu.Unlock()
 		} else {
 			g.mu.Lock()
-			_, err = fmt.Fprintf(g.std[level], str, val...)
+			_, err = fmt.Fprintf(g.std[level], str+"\n", val...)
 			g.mu.Unlock()
 		}
 		if err != nil {
@@ -416,7 +416,7 @@ func (g *Glg) out(level, format string, val ...interface{}) error {
 		w, ok := g.writer[level]
 		g.mu.Unlock()
 		if ok && w != nil {
-			_, err = fmt.Fprintf(w, str, val...)
+			_, err = fmt.Fprintf(w, str+"\n", val...)
 		}
 	}
 	return err

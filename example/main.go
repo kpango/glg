@@ -71,6 +71,11 @@ func main() {
 	glg.CustomLog(customLevel, "custom logging")
 	glg.CustomLog(customErrLevel, "custom error logging")
 
+	for i := 0; i < 100; i++ {
+		glg.Error("error")
+		glg.CustomLog(customLevel, "custom logging")
+	}
+
 	// glg.Get().AddLevelWriter(glg.DEBG, NetWorkLogger{}) // add info log file destination
 
 	http.Handle("/glg", glg.HTTPLoggerFunc("glg sample", func(w http.ResponseWriter, r *http.Request) {
