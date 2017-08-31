@@ -47,8 +47,8 @@ func TestNew(t *testing.T) {
 	t.Run("Comparing simple instances", func(t *testing.T) {
 		ins1 := New()
 		ins2 := New()
-		if ins1.GetCurrentMode() != ins2.GetCurrentMode() {
-			t.Errorf("glg mode = %v, want %v", ins1.GetCurrentMode(), ins2.GetCurrentMode())
+		if ins1.GetCurrentMode(LOG) != ins2.GetCurrentMode(LOG) {
+			t.Errorf("glg mode = %v, want %v", ins1.GetCurrentMode(LOG), ins2.GetCurrentMode(LOG))
 		}
 
 		for k, v := range ins1.writer {
@@ -95,8 +95,8 @@ func TestGet(t *testing.T) {
 			t.Errorf("Expect %v, want %v", ins2, ins1)
 		}
 
-		if ins1.GetCurrentMode() != ins2.GetCurrentMode() {
-			t.Errorf("glg mode = %v, want %v", ins1.GetCurrentMode(), ins2.GetCurrentMode())
+		if ins1.GetCurrentMode(LOG) != ins2.GetCurrentMode(LOG) {
+			t.Errorf("glg mode = %v, want %v", ins1.GetCurrentMode(LOG), ins2.GetCurrentMode(LOG))
 		}
 
 		for k, v := range ins1.writer {
@@ -181,7 +181,61 @@ func TestGlg_SetMode(t *testing.T) {
 	g := New()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := g.SetMode(tt.mode).GetCurrentMode(); !reflect.DeepEqual(got, tt.want) && !tt.isErr {
+			if got := g.SetMode(tt.mode).GetCurrentMode(LOG); !reflect.DeepEqual(got, tt.want) && !tt.isErr {
+				t.Errorf("Glg.SetMode() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGlg_SetLevelMode(t *testing.T) {
+	tests := []struct {
+		name  string
+		mode  int
+		want  int
+		isErr bool
+	}{
+		{
+			name:  "std",
+			mode:  STD,
+			want:  STD,
+			isErr: false,
+		},
+		{
+			name:  "writer",
+			mode:  WRITER,
+			want:  WRITER,
+			isErr: false,
+		},
+		{
+			name:  "both",
+			mode:  BOTH,
+			want:  BOTH,
+			isErr: false,
+		},
+		{
+			name:  "none",
+			mode:  NONE,
+			want:  NONE,
+			isErr: false,
+		},
+		{
+			name:  "writer-both",
+			mode:  WRITER,
+			want:  BOTH,
+			isErr: true,
+		},
+		{
+			name:  "different mode",
+			mode:  NONE,
+			want:  STD,
+			isErr: true,
+		},
+	}
+	g := New()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := g.SetLevelMode(LOG, tt.mode).GetCurrentMode(LOG); !reflect.DeepEqual(got, tt.want) && !tt.isErr {
 				t.Errorf("Glg.SetMode() = %v, want %v", got, tt.want)
 			}
 		})
@@ -218,8 +272,8 @@ func TestGlg_GetCurrentMode(t *testing.T) {
 	g := New()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := g.SetMode(tt.mode).GetCurrentMode(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Glg.GetCurrentMode() = %v, want %v", got, tt.want)
+			if got := g.SetMode(tt.mode).GetCurrentMode(LOG); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Glg.GetCurrentMode(LOG) = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -230,12 +284,12 @@ func TestGlg_InitWriter(t *testing.T) {
 	t.Run("InitWriter Check", func(t *testing.T) {
 		ins1 := New()
 		ins2 := ins1.InitWriter()
-		if ins1.GetCurrentMode() != ins2.GetCurrentMode() {
-			t.Errorf("glg mode = %v, want %v", ins1.GetCurrentMode(), ins2.GetCurrentMode())
+		if ins1.GetCurrentMode(LOG) != ins2.GetCurrentMode(LOG) {
+			t.Errorf("glg mode = %v, want %v", ins1.GetCurrentMode(LOG), ins2.GetCurrentMode(LOG))
 		}
 
-		if ins2.GetCurrentMode() != STD {
-			t.Errorf("Expect %v, want %v", ins2.GetCurrentMode(), STD)
+		if ins2.GetCurrentMode(LOG) != STD {
+			t.Errorf("Expect %v, want %v", ins2.GetCurrentMode(LOG), STD)
 		}
 
 		for k, v := range ins1.writer {
@@ -515,7 +569,7 @@ func TestGlg_AddStdLevel(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := New()
-			g.AddStdLevel(tt.level)
+			g.AddStdLevel(tt.level, STD, false)
 			got, ok := g.std[tt.level]
 			if !ok || !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Glg.AddStdLevel() = %v, want %v", got, tt.want)
@@ -544,7 +598,7 @@ func TestGlg_AddErrLevel(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := New()
-			g.AddErrLevel(tt.level)
+			g.AddErrLevel(tt.level, STD, false)
 			got, ok := g.std[tt.level]
 			if !ok || !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Glg.AddErrLevel() = %v, want %v", got, tt.want)
@@ -567,7 +621,7 @@ func TestGlg_EnableColor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.glg.EnableColor().isColor
+			got := tt.glg.EnableColor().isColor[LOG]
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Glg.EnableColor() = %v, want %v", got, tt.want)
 			}
@@ -589,7 +643,7 @@ func TestGlg_DisableColor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.glg.DisableColor().isColor
+			got := tt.glg.DisableColor().isColor[LOG]
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Glg.DisableColor() = %v, want %v", got, tt.want)
 			}
@@ -1168,7 +1222,7 @@ func TestGlg_out(t *testing.T) {
 			g := tt.glg.SetWriter(buf)
 			g.out(tt.level, tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
-			if !strings.Contains(buf.String(), want) && tt.glg.GetCurrentMode() != NONE && tt.glg.GetCurrentMode() != STD {
+			if !strings.Contains(buf.String(), want) && tt.glg.GetCurrentMode(LOG) != NONE && tt.glg.GetCurrentMode(LOG) != STD {
 				t.Errorf("Glg.out() = got %v want %v", buf.String(), want)
 			}
 		})
@@ -1823,7 +1877,7 @@ func TestGlg_CustomLog(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			g := New().SetMode(WRITER).AddStdLevel(tt.level).SetWriter(buf)
+			g := New().SetMode(WRITER).AddStdLevel(tt.level, WRITER, false).SetWriter(buf)
 			g.CustomLog(tt.level, tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
 			if !strings.Contains(buf.String(), want) {
@@ -1864,7 +1918,7 @@ func TestGlg_CustomLogf(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			g := New().SetMode(WRITER).AddStdLevel(tt.level).SetWriter(buf)
+			g := New().SetMode(WRITER).AddStdLevel(tt.level, WRITER, false).SetWriter(buf)
 			g.CustomLogf(tt.level, tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
 			if !strings.Contains(buf.String(), want) {
@@ -1891,7 +1945,7 @@ func TestCustomLog(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			Get().SetMode(WRITER).AddStdLevel(tt.level).SetWriter(buf)
+			Get().SetMode(WRITER).AddStdLevel(tt.level, WRITER, false).SetWriter(buf)
 			CustomLog(tt.level, tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
 			if !strings.Contains(buf.String(), want) {
@@ -1932,7 +1986,7 @@ func TestCustomLogf(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			Get().SetMode(WRITER).AddStdLevel(tt.level).SetWriter(buf)
+			Get().SetMode(WRITER).AddStdLevel(tt.level, WRITER, false).SetWriter(buf)
 			CustomLogf(tt.level, tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
 			if !strings.Contains(buf.String(), want) {

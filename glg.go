@@ -19,8 +19,8 @@ type Glg struct {
 	// writer for stdout or stderr
 	std     map[string]io.Writer
 	colors  map[string]func(string) string
-	mode    int
-	isColor bool
+	isColor map[string]bool
+	mode    map[string]int
 	mu      *sync.Mutex
 }
 
@@ -95,9 +95,33 @@ func New() *Glg {
 			FAIL:  Red,
 			FATAL: Red,
 		},
-		mode:    STD,
-		isColor: true,
-		mu:      new(sync.Mutex),
+		isColor: map[string]bool{
+			// standard out
+			PRINT: true,
+			LOG:   true,
+			INFO:  true,
+			DEBG:  true,
+			OK:    true,
+			WARN:  true,
+			// error out
+			ERR:   true,
+			FAIL:  true,
+			FATAL: true,
+		},
+		mode: map[string]int{
+			// standard out
+			PRINT: STD,
+			LOG:   STD,
+			INFO:  STD,
+			DEBG:  STD,
+			OK:    STD,
+			WARN:  STD,
+			// error out
+			ERR:   STD,
+			FAIL:  STD,
+			FATAL: STD,
+		},
+		mu: new(sync.Mutex),
 	})
 }
 
@@ -112,14 +136,24 @@ func Get() *Glg {
 // SetMode sets glg logging mode
 func (g *Glg) SetMode(mode int) *Glg {
 	g.mu.Lock()
-	g.mode = mode
+	for level := range g.mode {
+		g.mode[level] = mode
+	}
+	g.mu.Unlock()
+	return g
+}
+
+// SetLevelMode set glg logging mode per level
+func (g *Glg) SetLevelMode(level string, mode int) *Glg {
+	g.mu.Lock()
+	g.mode[level] = mode
 	g.mu.Unlock()
 	return g
 }
 
 // GetCurrentMode returns current logging mode
-func (g *Glg) GetCurrentMode() int {
-	return g.mode
+func (g *Glg) GetCurrentMode(level string) int {
+	return g.mode[level]
 }
 
 // InitWriter is initialize glg writer
@@ -205,27 +239,35 @@ func (g *Glg) AddLevelWriter(level string, writer io.Writer) *Glg {
 }
 
 // AddStdLevel adds std log level
-func (g *Glg) AddStdLevel(level string) *Glg {
+func (g *Glg) AddStdLevel(level string, mode int, isColor bool) *Glg {
 	g.mu.Lock()
-	defer g.mu.Unlock()
 	g.writer[level] = g.writer[INFO]
 	g.std[level] = os.Stdout
+	g.mode[level] = mode
+	g.colors[level] = Colorless
+	g.isColor[level] = isColor
+	g.mu.Unlock()
 	return g
 }
 
 // AddErrLevel adds error log level
-func (g *Glg) AddErrLevel(level string) *Glg {
+func (g *Glg) AddErrLevel(level string, mode int, isColor bool) *Glg {
 	g.mu.Lock()
-	defer g.mu.Unlock()
 	g.writer[level] = g.writer[ERR]
 	g.std[level] = os.Stderr
+	g.mode[level] = mode
+	g.colors[level] = Red
+	g.isColor[level] = isColor
+	g.mu.Unlock()
 	return g
 }
 
 // EnableColor enables color output
 func (g *Glg) EnableColor() *Glg {
 	g.mu.Lock()
-	g.isColor = true
+	for level := range g.isColor {
+		g.isColor[level] = true
+	}
 	g.mu.Unlock()
 	return g
 }
@@ -233,7 +275,9 @@ func (g *Glg) EnableColor() *Glg {
 // DisableColor disables color output
 func (g *Glg) DisableColor() *Glg {
 	g.mu.Lock()
-	g.isColor = false
+	for level := range g.isColor {
+		g.isColor[level] = false
+	}
 	g.mu.Unlock()
 	return g
 }
@@ -275,10 +319,6 @@ func FileWriter(path string, perm os.FileMode) *os.File {
 
 // HTTPLogger is simple http access logger
 func (g *Glg) HTTPLogger(name string, handler http.Handler) http.Handler {
-	if g.mode == NONE {
-		return handler
-	}
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
@@ -298,9 +338,6 @@ func (g *Glg) HTTPLogger(name string, handler http.Handler) http.Handler {
 
 // HTTPLoggerFunc is simple http access logger
 func (g *Glg) HTTPLoggerFunc(name string, hf http.HandlerFunc) http.Handler {
-	if g.mode == NONE {
-		return hf
-	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
@@ -384,7 +421,7 @@ func White(str string) string {
 }
 
 func (g *Glg) out(level, format string, val ...interface{}) error {
-	if g.mode == NONE {
+	if g.mode[level] == NONE {
 		return nil
 	}
 
@@ -396,8 +433,9 @@ func (g *Glg) out(level, format string, val ...interface{}) error {
 
 	var err error
 
-	if g.mode == STD || g.mode == BOTH {
-		if _, ok := g.colors[level]; ok && g.isColor {
+	if g.mode[level] == STD || g.mode[level] == BOTH {
+		_, ok := g.colors[level]
+		if g.isColor[level] && ok {
 			g.mu.Lock()
 			_, err = fmt.Fprintf(g.std[level], g.colors[level](str)+"\n", val...)
 			g.mu.Unlock()
@@ -411,7 +449,7 @@ func (g *Glg) out(level, format string, val ...interface{}) error {
 		}
 	}
 
-	if g.mode == WRITER || g.mode == BOTH {
+	if g.mode[level] == WRITER || g.mode[level] == BOTH {
 		g.mu.Lock()
 		w, ok := g.writer[level]
 		g.mu.Unlock()
