@@ -37,8 +37,8 @@ go get github.com/kpango/glg
 		AddLevelWriter(glg.INFO, infolog). // add info log file destination
 		// AddLevelWriter(glg.INFO, glg.FileWriter("/tmp/info.log", 0666)). // add info log file destination
 		// AddLevelWriter(glg.ERR, glg.FileWriter("/tmp/errors.log", 0666)). // add error log file destination
-		AddStdLevel(customLevel).              //user custom log level
-		AddErrLevel(customErrLevel).           // user custom error log level
+		AddStdLevel(customLevel, glg.STD, false).   //user custom log level
+		AddErrLevel(customErrLevel, glg.STD, true). // user custom error log level
 		SetLevelColor(customErrLevel, glg.Red) // set color output to user custom level
 
 	glg.Info("info")
@@ -59,7 +59,9 @@ go get github.com/kpango/glg
 	glg.Println("Println")
 	glg.Printf("%s : %s", "printf", "formatted")
 
+	glg.Get().DisableColor()
 	glg.CustomLog(customLevel, "custom logging")
+	glg.Get().EnableColor()
 	glg.CustomLog(customErrLevel, "custom error logging")
 
 	// HTTP Handler Logger

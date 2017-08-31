@@ -47,9 +47,9 @@ func main() {
 		// SetLevelWriter(glg.ERR, customWriter).
 		AddLevelWriter(glg.INFO, infolog). // add info log file destination
 		// AddLevelWriter(glg.ERR, errlog). // add error log file destination
-		AddStdLevel(customLevel).              //user custom log level
-		AddErrLevel(customErrLevel).           // user custom error log level
-		SetLevelColor(customErrLevel, glg.Red) // set color output to user custom level
+		AddStdLevel(customLevel, glg.STD, false).   //user custom log level
+		AddErrLevel(customErrLevel, glg.STD, true). // user custom error log level
+		SetLevelColor(customErrLevel, glg.Red)      // set color output to user custom level
 
 	glg.Info("info")
 	glg.Infof("%s : %s", "info", "formatted")
