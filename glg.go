@@ -425,7 +425,7 @@ func (g *Glg) out(level, format string, val ...interface{}) error {
 		return nil
 	}
 
-	var buf = make([]byte, 0, 20)
+	var buf = make([]byte, 0, 19)
 	buf = time.Now().AppendFormat(buf[:0], "2006-01-02 15:04:05")
 
 	var str = *(*string)(unsafe.Pointer(&buf)) +
