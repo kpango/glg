@@ -425,14 +425,11 @@ func (g *Glg) out(level, format string, val ...interface{}) error {
 		return nil
 	}
 
-	var buf = make([]byte, 0, 19)
-	buf = time.Now().AppendFormat(buf[:0], "2006-01-02 15:04:05")
-
-	var str = *(*string)(unsafe.Pointer(&buf)) +
-		"\t[" + level + "]:\t" + format
+	var buf = make([]byte, 0, len(level)+len(format)+25)
+	buf = append(append(append(append(time.Now().AppendFormat(buf[:0], "2006-01-02 15:04:05"), "\t["...), level...), "]:\t"...), format...)
+	var str = *(*string)(unsafe.Pointer(&buf))
 
 	var err error
-
 	if g.mode[level] == STD || g.mode[level] == BOTH {
 		_, ok := g.colors[level]
 		if g.isColor[level] && ok {
