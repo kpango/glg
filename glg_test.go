@@ -51,38 +51,25 @@ func TestNew(t *testing.T) {
 			t.Errorf("glg mode = %v, want %v", ins1.GetCurrentMode(LOG), ins2.GetCurrentMode(LOG))
 		}
 
-		for k, v := range ins1.writer {
-			v2, ok := ins2.writer[k]
+		ins1.logger.Range(func(key, val interface{}) bool {
+			lev1, ok := val.(*logger)
 			if !ok {
-				t.Error("glg writer not found")
+				t.Errorf("invalid glg instance 1 type:\t%v", val)
 			}
-
-			if v2 != v {
-				t.Errorf("Expect %v, want %v", v2, v)
-			}
-		}
-
-		for k, v := range ins1.std {
-			v2, ok := ins2.std[k]
+			i2, ok := ins2.logger.Load(key.(LEVEL))
 			if !ok {
-				t.Error("glg std writer not found")
+				t.Error("glg instance 2 not found")
 			}
-
-			if v2 != v {
-				t.Errorf("Expect %v, want %v", v2, v)
-			}
-		}
-
-		for k, v := range ins1.colors {
-			v2, ok := ins2.colors[k]
+			lev2, ok := i2.(*logger)
 			if !ok {
-				t.Error("glg color func not found")
+				t.Errorf("invalid glg instance 2 type:\t%v", val)
 			}
-
-			if v2("test") != v("test") {
-				t.Errorf("Expect %v, want %v", v2("test"), v("test"))
+			if lev1.tag != lev2.tag || lev1.mode != lev2.mode {
+				t.Errorf("Expect %v, want %v", lev2, lev1)
+				return false
 			}
-		}
+			return true
+		})
 	})
 }
 
@@ -91,54 +78,36 @@ func TestGet(t *testing.T) {
 		ins1 := Get()
 		ins2 := Get()
 
-		if ins1 != ins2 {
+		if !reflect.DeepEqual(ins1, ins2) {
 			t.Errorf("Expect %v, want %v", ins2, ins1)
 		}
-
-		if ins1.GetCurrentMode(LOG) != ins2.GetCurrentMode(LOG) {
-			t.Errorf("glg mode = %v, want %v", ins1.GetCurrentMode(LOG), ins2.GetCurrentMode(LOG))
-		}
-
-		for k, v := range ins1.writer {
-			v2, ok := ins2.writer[k]
+		ins1.logger.Range(func(key, val interface{}) bool {
+			lev1, ok := val.(*logger)
 			if !ok {
-				t.Error("glg writer not found")
+				t.Errorf("invalid glg instance 1 type:\t%v", val)
 			}
-
-			if v2 != v {
-				t.Errorf("Expect %v, want %v", v2, v)
-			}
-		}
-
-		for k, v := range ins1.std {
-			v2, ok := ins2.std[k]
+			i2, ok := ins2.logger.Load(key.(LEVEL))
 			if !ok {
-				t.Error("glg std writer not found")
+				t.Error("glg instance 2 not found")
 			}
-
-			if v2 != v {
-				t.Errorf("Expect %v, want %v", v2, v)
-			}
-		}
-
-		for k, v := range ins1.colors {
-			v2, ok := ins2.colors[k]
+			lev2, ok := i2.(*logger)
 			if !ok {
-				t.Error("glg color func not found")
+				t.Errorf("invalid glg instance 2 type:\t%v", val)
 			}
-
-			if v2("test") != v("test") {
-				t.Errorf("Expect %v, want %v", v2("test"), v("test"))
+			if !reflect.DeepEqual(lev1, lev2) {
+				t.Errorf("Expect %v, want %v", lev2, lev1)
+				return false
 			}
-		}
+			return true
+		})
 	})
 }
 
 func TestGlg_SetMode(t *testing.T) {
 	tests := []struct {
 		name  string
-		mode  int
-		want  int
+		mode  MODE
+		want  MODE
 		isErr bool
 	}{
 		{
@@ -191,51 +160,65 @@ func TestGlg_SetMode(t *testing.T) {
 func TestGlg_SetLevelMode(t *testing.T) {
 	tests := []struct {
 		name  string
-		mode  int
-		want  int
+		mode  MODE
+		want  MODE
+		level LEVEL
 		isErr bool
 	}{
 		{
 			name:  "std",
 			mode:  STD,
 			want:  STD,
+			level: LOG,
 			isErr: false,
 		},
 		{
 			name:  "writer",
 			mode:  WRITER,
 			want:  WRITER,
+			level: LOG,
 			isErr: false,
 		},
 		{
 			name:  "both",
 			mode:  BOTH,
 			want:  BOTH,
+			level: LOG,
 			isErr: false,
 		},
 		{
 			name:  "none",
 			mode:  NONE,
 			want:  NONE,
+			level: LOG,
 			isErr: false,
 		},
 		{
 			name:  "writer-both",
 			mode:  WRITER,
 			want:  BOTH,
+			level: LOG,
 			isErr: true,
 		},
 		{
 			name:  "different mode",
 			mode:  NONE,
 			want:  STD,
+			level: LOG,
 			isErr: true,
+		},
+		{
+			name:  "different mode",
+			mode:  WRITER,
+			want:  NONE,
+			level: 123,
+			isErr: false,
 		},
 	}
 	g := New()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := g.SetLevelMode(LOG, tt.mode).GetCurrentMode(LOG); !reflect.DeepEqual(got, tt.want) && !tt.isErr {
+			if got := g.SetLevelMode(tt.level, tt.mode).GetCurrentMode(tt.level); !reflect.DeepEqual(got, tt.want) && !tt.isErr {
 				t.Errorf("Glg.SetMode() = %v, want %v", got, tt.want)
 			}
 		})
@@ -244,35 +227,45 @@ func TestGlg_SetLevelMode(t *testing.T) {
 
 func TestGlg_GetCurrentMode(t *testing.T) {
 	tests := []struct {
-		name string
-		mode int
-		want int
+		name  string
+		mode  MODE
+		want  MODE
+		level LEVEL
 	}{
 		{
-			name: "std",
-			mode: STD,
-			want: STD,
+			name:  "std",
+			mode:  STD,
+			want:  STD,
+			level: LOG,
 		},
 		{
-			name: "writer",
-			mode: WRITER,
-			want: WRITER,
+			name:  "writer",
+			mode:  WRITER,
+			want:  WRITER,
+			level: LOG,
 		},
 		{
-			name: "both",
-			mode: BOTH,
-			want: BOTH,
+			name:  "both",
+			mode:  BOTH,
+			want:  BOTH,
+			level: LOG,
 		},
 		{
-			name: "none",
-			mode: NONE,
-			want: NONE,
+			name:  "none",
+			mode:  NONE,
+			want:  NONE,
+			level: LOG,
+		},
+		{
+			name:  "different mode",
+			mode:  WRITER,
+			want:  NONE,
+			level: 123,
 		},
 	}
-	g := New()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := g.SetMode(tt.mode).GetCurrentMode(LOG); !reflect.DeepEqual(got, tt.want) {
+			if got := New().SetMode(tt.mode).GetCurrentMode(tt.level); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Glg.GetCurrentMode(LOG) = %v, want %v", got, tt.want)
 			}
 		})
@@ -292,38 +285,26 @@ func TestGlg_InitWriter(t *testing.T) {
 			t.Errorf("Expect %v, want %v", ins2.GetCurrentMode(LOG), STD)
 		}
 
-		for k, v := range ins1.writer {
-			v2, ok := ins2.writer[k]
+		ins1.logger.Range(func(key, val interface{}) bool {
+
+			lev1, ok := val.(*logger)
 			if !ok {
-				t.Error("glg writer not found")
+				t.Errorf("invalid glg instance 1 type:\t%v", val)
 			}
-
-			if v2 != v {
-				t.Errorf("Expect %v, want %v", v2, v)
-			}
-		}
-
-		for k, v := range ins1.std {
-			v2, ok := ins2.std[k]
+			i2, ok := ins2.logger.Load(key.(LEVEL))
 			if !ok {
-				t.Error("glg std writer not found")
+				t.Error("glg instance 2 not found")
 			}
-
-			if v2 != v {
-				t.Errorf("Expect %v, want %v", v2, v)
-			}
-		}
-
-		for k, v := range ins1.colors {
-			v2, ok := ins2.colors[k]
+			lev2, ok := i2.(*logger)
 			if !ok {
-				t.Error("glg color func not found")
+				t.Errorf("invalid glg instance 2 type:\t%v", val)
 			}
-
-			if v2("test") != v("test") {
-				t.Errorf("Expect %v, want %v", v2("test"), v("test"))
+			if !reflect.DeepEqual(lev1, lev2) {
+				t.Errorf("Expect %v, want %v", lev2, lev1)
+				return false
 			}
-		}
+			return true
+		})
 	})
 
 }
@@ -358,12 +339,18 @@ func TestGlg_SetWriter(t *testing.T) {
 					t.Errorf("Glg.SetWriter() = %v, want %v", got, tt.msg)
 				}
 			} else {
-				w, ok := g.writer[INFO]
-				if ok && w != nil {
-					t.Errorf("Glg.SetWriter() = %v, want %v", w, tt.want)
+				l, ok := g.logger.Load(INFO)
+				if !ok {
+					t.Error("glg instance not found")
+				}
+				ins, ok := l.(*logger)
+				if !ok {
+					t.Errorf("invalid glg instance type:\t%v", l)
+				}
+				if ins.writer != nil {
+					t.Errorf("Glg.SetWriter() = %v, want %v", ins.writer, tt.want)
 				}
 			}
-
 		})
 	}
 }
@@ -397,9 +384,16 @@ func TestGlg_AddWriter(t *testing.T) {
 					t.Errorf("Glg.AddWriter() = %vwant %v", got, want)
 				}
 			} else {
-				w, ok := g.writer[INFO]
-				if ok && w != writer {
-					t.Errorf("Glg.AddWriter() = %v, want %v", w, tt.want)
+				l, ok := g.logger.Load(INFO)
+				if !ok {
+					t.Error("glg instance not found")
+				}
+				ins, ok := l.(*logger)
+				if !ok {
+					t.Errorf("invalid glg instance type:\t%v", l)
+				}
+				if ins.writer == nil {
+					t.Errorf("Glg.AddWriter() = %v, want %v", ins.writer, tt.want)
 				}
 			}
 		})
@@ -409,7 +403,7 @@ func TestGlg_AddWriter(t *testing.T) {
 func TestGlg_SetLevelColor(t *testing.T) {
 	tests := []struct {
 		name  string
-		level string
+		level LEVEL
 		color func(string) string
 		txt   string
 		want  string
@@ -447,7 +441,15 @@ func TestGlg_SetLevelColor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := New()
 			g.SetLevelColor(tt.level, tt.color)
-			got := g.colors[tt.level](tt.txt)
+			l, ok := g.logger.Load(tt.level)
+			if !ok {
+				t.Error("glg instance not found")
+			}
+			ins, ok := l.(*logger)
+			if !ok {
+				t.Errorf("invalid glg instance type:\t%v", l)
+			}
+			got := ins.color(tt.txt)
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Glg.SetLevelColor() = %v, want %v", got, tt.want)
 			}
@@ -459,7 +461,7 @@ func TestGlg_SetLevelWriter(t *testing.T) {
 	tests := []struct {
 		name   string
 		writer io.Writer
-		level  string
+		level  LEVEL
 	}{
 		{
 			name:   "Info level",
@@ -482,16 +484,16 @@ func TestGlg_SetLevelWriter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := New()
 			g.SetLevelWriter(tt.level, tt.writer)
-			if tt.writer != nil {
-				got, ok := g.writer[tt.level]
-				if !ok || !reflect.DeepEqual(got, tt.writer) {
-					t.Errorf("Glg.SetLevelWriter() = %v, want %v", got, tt.writer)
-				}
-			} else {
-				got, ok := g.writer[tt.level]
-				if ok && got != nil {
-					t.Errorf("Glg.SetLevelWriter() = %v, want %v", got, tt.writer)
-				}
+			l, ok := g.logger.Load(tt.level)
+			if !ok {
+				t.Error("glg instance not found")
+			}
+			ins, ok := l.(*logger)
+			if !ok {
+				t.Errorf("invalid glg instance type:\t%v", l)
+			}
+			if !reflect.DeepEqual(ins.writer, tt.writer) {
+				t.Errorf("Glg.SetLevelWriter() = %v, want %v", ins.writer, tt.writer)
 			}
 		})
 	}
@@ -502,7 +504,7 @@ func TestGlg_AddLevelWriter(t *testing.T) {
 		glg    *Glg
 		name   string
 		writer io.Writer
-		level  string
+		level  LEVEL
 	}{
 		{
 			glg:    New(),
@@ -517,7 +519,7 @@ func TestGlg_AddLevelWriter(t *testing.T) {
 			level:  ERR,
 		},
 		{
-			glg:    New().SetLevelWriter(DEBG, os.Stdout),
+			glg:    New(),
 			name:   "Append DEBG level",
 			writer: new(bytes.Buffer),
 			level:  DEBG,
@@ -534,16 +536,16 @@ func TestGlg_AddLevelWriter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := tt.glg
 			g.AddLevelWriter(tt.level, tt.writer)
-			if tt.writer != nil {
-				got, ok := g.writer[tt.level]
-				if !ok || !reflect.DeepEqual(got, tt.writer) && tt.level != DEBG {
-					t.Errorf("Glg.AddLevelWriter() = %v, want %v", got, tt.writer)
-				}
-			} else {
-				got, ok := g.writer[tt.level]
-				if ok && got != nil {
-					t.Errorf("Glg.AddLevelWriter() = %v, want %v", got, tt.writer)
-				}
+			l, ok := g.logger.Load(tt.level)
+			if !ok {
+				t.Error("glg instance not found")
+			}
+			ins, ok := l.(*logger)
+			if !ok {
+				t.Errorf("invalid glg instance type:\t%v", l)
+			}
+			if tt.writer != nil && !reflect.DeepEqual(ins.writer, tt.writer) {
+				t.Errorf("Glg.AddLevelWriter() = %v, want %v", ins.writer, tt.writer)
 			}
 		})
 	}
@@ -568,11 +570,14 @@ func TestGlg_AddStdLevel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := New()
-			g.AddStdLevel(tt.level, STD, false)
-			got, ok := g.std[tt.level]
-			if !ok || !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Glg.AddStdLevel() = %v, want %v", got, tt.want)
+			g := New().AddStdLevel(tt.level, STD, false)
+			l, ok := g.logger.Load(g.TagStringToLevel(tt.level))
+			if !ok {
+				t.Error("glg instance not found")
+			}
+			ins, ok := l.(*logger)
+			if !ok || ins == nil {
+				t.Errorf("invalid glg instance type:\t%v", l)
 			}
 		})
 	}
@@ -597,11 +602,14 @@ func TestGlg_AddErrLevel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := New()
-			g.AddErrLevel(tt.level, STD, false)
-			got, ok := g.std[tt.level]
-			if !ok || !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Glg.AddErrLevel() = %v, want %v", got, tt.want)
+			g := New().AddErrLevel(tt.level, STD, false)
+			l, ok := g.logger.Load(g.TagStringToLevel(tt.level))
+			if !ok {
+				t.Error("glg instance not found")
+			}
+			ins, ok := l.(*logger)
+			if !ok || ins == nil {
+				t.Errorf("invalid glg instance type:\t%v", l)
 			}
 		})
 	}
@@ -621,7 +629,11 @@ func TestGlg_EnableColor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.glg.EnableColor().isColor[LOG]
+			l, ok := tt.glg.EnableColor().logger.Load(LOG)
+			if !ok {
+				t.Error("glg instance not found")
+			}
+			got := l.(*logger).isColor
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Glg.EnableColor() = %v, want %v", got, tt.want)
 			}
@@ -636,16 +648,147 @@ func TestGlg_DisableColor(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "EnableColor",
+			name: "DisableColor",
 			glg:  New().EnableColor(),
 			want: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.glg.DisableColor().isColor[LOG]
+			l, ok := tt.glg.DisableColor().logger.Load(LOG)
+			if !ok {
+				t.Error("glg instance not found")
+			}
+			got := l.(*logger).isColor
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Glg.DisableColor() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGlg_EnableLevelColor(t *testing.T) {
+	tests := []struct {
+		name  string
+		glg   *Glg
+		want  bool
+		level LEVEL
+	}{
+		{
+			name:  "EnableColor",
+			glg:   New().DisableColor(),
+			want:  true,
+			level: INFO,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l, ok := tt.glg.EnableLevelColor(tt.level).logger.Load(tt.level)
+			if !ok {
+				t.Error("glg instance not found")
+			}
+			got := l.(*logger).isColor
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Glg.DisableColor() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGlg_DisableLevelColor(t *testing.T) {
+	tests := []struct {
+		name  string
+		glg   *Glg
+		want  bool
+		level LEVEL
+	}{
+		{
+			name:  "DisableColor",
+			glg:   New().EnableColor(),
+			want:  false,
+			level: WARN,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l, ok := tt.glg.DisableLevelColor(tt.level).logger.Load(tt.level)
+			if !ok {
+				t.Error("glg instance not found")
+			}
+			got := l.(*logger).isColor
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Glg.DisableColor() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTagStringToLevel(t *testing.T) {
+	tests := []struct {
+		name      string
+		g         *Glg
+		tag       string
+		want      LEVEL
+		createFlg bool
+	}{
+		{
+			name:      "customTag",
+			g:         Get(),
+			tag:       "customTag",
+			want:      FATAL + 1,
+			createFlg: true,
+		},
+		{
+			name:      "customTag No create",
+			g:         Get(),
+			tag:       "customTagFail",
+			want:      255,
+			createFlg: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.createFlg {
+				tt.g.AddStdLevel(tt.tag, STD, false)
+			}
+			got := glg.TagStringToLevel(tt.tag)
+			if got != tt.want {
+				t.Errorf("Glg.TagStringToLevel = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGlg_TagStringToLevel(t *testing.T) {
+	tests := []struct {
+		name      string
+		g         *Glg
+		tag       string
+		want      LEVEL
+		createFlg bool
+	}{
+		{
+			name:      "customTag",
+			g:         New(),
+			tag:       "customTag",
+			want:      FATAL + 1,
+			createFlg: true,
+		},
+		{
+			name:      "customTag No create",
+			g:         New(),
+			tag:       "customTagFail",
+			want:      255,
+			createFlg: false,
+		}}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.createFlg {
+				tt.g.AddStdLevel(tt.tag, STD, false)
+			}
+			got := glg.TagStringToLevel(tt.tag)
+			if got != tt.want {
+				t.Errorf("Glg.TagStringToLevel = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -701,7 +844,7 @@ func TestGlg_HTTPLogger(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		mode int
+		mode MODE
 	}{
 		{
 			name: "http logger simple",
@@ -761,7 +904,7 @@ func TestGlg_HTTPLoggerFunc(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		mode int
+		mode MODE
 	}{
 		{
 			name: "http logger simple",
@@ -1134,7 +1277,7 @@ func TestGlg_out(t *testing.T) {
 	tests := []struct {
 		glg    *Glg
 		name   string
-		level  string
+		level  LEVEL
 		format string
 		val    []interface{}
 	}{
@@ -1877,7 +2020,9 @@ func TestGlg_CustomLog(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			g := New().SetMode(WRITER).AddStdLevel(tt.level, WRITER, false).SetWriter(buf)
+			g := New()
+			g.SetMode(WRITER).AddStdLevel(tt.level, WRITER, false)
+			g.SetWriter(buf)
 			g.CustomLog(tt.level, tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
 			if !strings.Contains(buf.String(), want) {
@@ -1918,11 +2063,13 @@ func TestGlg_CustomLogf(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			g := New().SetMode(WRITER).AddStdLevel(tt.level, WRITER, false).SetWriter(buf)
+			g := New()
+			g.SetMode(WRITER).AddStdLevel(tt.level, WRITER, false)
+			g.SetWriter(buf)
 			g.CustomLogf(tt.level, tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
 			if !strings.Contains(buf.String(), want) {
-				t.Errorf("Glg.Warnf() = got %v want %v", buf.String(), want)
+				t.Errorf("Glg.CustomLogf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
@@ -1945,7 +2092,8 @@ func TestCustomLog(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			Get().SetMode(WRITER).AddStdLevel(tt.level, WRITER, false).SetWriter(buf)
+			Get().SetMode(WRITER).AddStdLevel(tt.level, WRITER, false)
+			Get().SetWriter(buf)
 			CustomLog(tt.level, tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
 			if !strings.Contains(buf.String(), want) {
@@ -1986,7 +2134,8 @@ func TestCustomLogf(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			Get().SetMode(WRITER).AddStdLevel(tt.level, WRITER, false).SetWriter(buf)
+			Get().SetMode(WRITER).AddStdLevel(tt.level, WRITER, false)
+			Get().SetWriter(buf)
 			CustomLogf(tt.level, tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
 			if !strings.Contains(buf.String(), want) {

@@ -2,56 +2,82 @@
 package glg
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unsafe"
 )
 
 // Glg is glg base struct
 type Glg struct {
-	// user cutom writer
-	writer map[string]io.Writer
-	// writer for stdout or stderr
-	std     map[string]io.Writer
-	colors  map[string]func(string) string
-	isColor map[string]bool
-	mode    map[string]int
-	mu      *sync.Mutex
+	logger       sync.Map      // map[uint8]*logger
+	timer        *atomic.Value // []byte
+	levelCounter *uint32
+	levelMap     sync.Map
+	buffer       sync.Pool
+	cancel       context.CancelFunc
+}
+
+// MODE is logging mode (std only, writer only, std & writer)
+type MODE uint8
+
+// LEVEL is log level
+type LEVEL uint8
+
+type wMode uint8
+
+type logger struct {
+	tag       string
+	writer    io.Writer
+	std       io.Writer
+	color     func(string) string
+	isColor   bool
+	mode      MODE
+	writeMode wMode
 }
 
 const (
 	// LOG is log level
-	LOG = "LOG"
+	LOG LEVEL = iota
 	// PRINT is print log level
-	PRINT = "PRINT"
+	PRINT
 	// INFO is info log level
-	INFO = "INFO"
+	INFO
 	// DEBG is debug log level
-	DEBG = "DEBG"
+	DEBG
 	// OK is success notify log level
-	OK = "OK"
+	OK
 	// WARN is warning log level
-	WARN = "WARN"
+	WARN
 	// ERR is error log level
-	ERR = "ERR"
+	ERR
 	// FAIL is failed log level
-	FAIL = "FAIL"
+	FAIL
 	// FATAL is fatal log level
-	FATAL = "FATAL"
+	FATAL
 
 	// NONE is disable Logging
-	NONE = iota
+	NONE MODE = iota
 	// STD is std log mode
 	STD
 	// BOTH is both log mode
 	BOTH
 	// WRITER is io.Writer log mode
 	WRITER
+
+	// Internal writeMode
+	writeColorStd wMode = iota
+	writeStd
+	writeWriter
+	writeColorBoth
+	writeBoth
+	none
 )
 
 var (
@@ -60,69 +86,139 @@ var (
 
 	// exit for Faltal error
 	exit = os.Exit
+
+	bufferSize = 2000
 )
 
 func init() {
 	Get()
 }
 
+func (l LEVEL) String() string {
+	switch l {
+	case LOG:
+		return "LOG"
+	case PRINT:
+		return "PRINT"
+	case INFO:
+		return "INFO"
+	case DEBG:
+		return "DEBG"
+	case OK:
+		return "OK"
+	case WARN:
+		return "WARN"
+	case ERR:
+		return "ERR"
+	case FAIL:
+		return "FAIL"
+	case FATAL:
+		return "FATAL"
+	}
+	return ""
+}
+
+func (l *logger) updateMode() *logger {
+	switch {
+	case l.mode == WRITER && l.writer != nil:
+		l.writeMode = writeWriter
+	case l.mode == BOTH && l.isColor && l.writer == nil:
+		l.writeMode = writeColorStd
+	case l.mode == BOTH && l.isColor && l.writer != nil:
+		l.writeMode = writeColorBoth
+	case l.mode == BOTH && !l.isColor && l.writer == nil:
+		l.writeMode = writeStd
+	case l.mode == BOTH && !l.isColor && l.writer != nil:
+		l.writeMode = writeBoth
+	case l.mode == STD && l.isColor:
+		l.writeMode = writeColorStd
+	case l.mode == STD && !l.isColor:
+		l.writeMode = writeStd
+	default:
+		l.writeMode = none
+	}
+	return l
+}
+
 // New returns plain glg instance
 func New() *Glg {
-	return (&Glg{
-		writer: make(map[string]io.Writer),
-		std: map[string]io.Writer{
-			// standard out
-			PRINT: os.Stdout,
-			LOG:   os.Stdout,
-			INFO:  os.Stdout,
-			DEBG:  os.Stdout,
-			OK:    os.Stdout,
-			WARN:  os.Stdout,
-			// error out
-			ERR:   os.Stderr,
-			FAIL:  os.Stderr,
-			FATAL: os.Stderr,
+	m := map[LEVEL]*logger{
+		// standard out
+		PRINT: &logger{
+			std:     os.Stdout,
+			color:   Colorless,
+			isColor: true,
+			mode:    STD,
 		},
-		colors: map[string]func(string) string{
-			PRINT: Colorless,
-			LOG:   Colorless,
-			INFO:  Green,
-			DEBG:  Purple,
-			OK:    Cyan,
-			WARN:  Orange,
-			// error out
-			ERR:   Red,
-			FAIL:  Red,
-			FATAL: Red,
+		LOG: &logger{
+			std:     os.Stdout,
+			color:   Colorless,
+			isColor: true,
+			mode:    STD,
 		},
-		isColor: map[string]bool{
-			// standard out
-			PRINT: true,
-			LOG:   true,
-			INFO:  true,
-			DEBG:  true,
-			OK:    true,
-			WARN:  true,
-			// error out
-			ERR:   true,
-			FAIL:  true,
-			FATAL: true,
+		INFO: &logger{
+			std:     os.Stdout,
+			color:   Green,
+			isColor: true,
+			mode:    STD,
 		},
-		mode: map[string]int{
-			// standard out
-			PRINT: STD,
-			LOG:   STD,
-			INFO:  STD,
-			DEBG:  STD,
-			OK:    STD,
-			WARN:  STD,
-			// error out
-			ERR:   STD,
-			FAIL:  STD,
-			FATAL: STD,
+		DEBG: &logger{
+			std:     os.Stdout,
+			color:   Purple,
+			isColor: true,
+			mode:    STD,
 		},
-		mu: new(sync.Mutex),
-	})
+		OK: &logger{
+			std:     os.Stdout,
+			color:   Cyan,
+			isColor: true,
+			mode:    STD,
+		},
+		WARN: &logger{
+			std:     os.Stdout,
+			color:   Orange,
+			isColor: true,
+			mode:    STD,
+		},
+		// error out
+		ERR: &logger{
+			std:     os.Stderr,
+			color:   Red,
+			isColor: true,
+			mode:    STD,
+		},
+		FAIL: &logger{
+			std:     os.Stderr,
+			color:   Red,
+			isColor: true,
+			mode:    STD,
+		},
+		FATAL: &logger{
+			std:     os.Stderr,
+			color:   Red,
+			isColor: true,
+			mode:    STD,
+		},
+	}
+
+	g := &Glg{
+		levelCounter: new(uint32),
+		buffer: sync.Pool{
+			New: func() interface{} {
+				return make([]byte, bufferSize)
+			},
+		},
+	}
+
+	atomic.StoreUint32(g.levelCounter, uint32(FATAL))
+
+	for k, v := range m {
+		v.tag = k.String()
+		v.updateMode()
+		g.logger.Store(k, v)
+	}
+
+	return g.startTimerD()
 }
 
 // Get returns singleton glg instance
@@ -133,34 +229,85 @@ func Get() *Glg {
 	return glg
 }
 
-// SetMode sets glg logging mode
-func (g *Glg) SetMode(mode int) *Glg {
-	g.mu.Lock()
-	for level := range g.mode {
-		g.mode[level] = mode
-	}
-	g.mu.Unlock()
+func (g *Glg) startTimerD() *Glg {
+	g.timer = new(atomic.Value)
+	timeFormat := "2006-01-02 15:04:05"
+
+	buf := g.buffer.Get().([]byte)
+	g.timer.Store(time.Now().AppendFormat(buf[:0], timeFormat))
+	g.buffer.Put(buf[:0])
+
+	var ctx context.Context
+	ctx, g.cancel = context.WithCancel(context.Background())
+
+	go func() {
+		ticker := time.NewTicker(time.Millisecond * 500)
+		for {
+			select {
+			case <-ctx.Done():
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				buf := g.buffer.Get().([]byte)
+				g.timer.Store(time.Now().AppendFormat(buf[:0], timeFormat))
+				g.buffer.Put(buf[:0])
+			}
+		}
+	}()
+
 	return g
 }
 
-// SetLevelMode set glg logging mode per level
-func (g *Glg) SetLevelMode(level string, mode int) *Glg {
-	g.mu.Lock()
-	g.mode[level] = mode
-	g.mu.Unlock()
+// Stop stops glg timer daemon
+func (g *Glg) Stop() *Glg {
+	g.cancel()
+	return g
+}
+
+// SetMode sets glg logging mode
+func (g *Glg) SetMode(mode MODE) *Glg {
+	g.logger.Range(func(key, val interface{}) bool {
+		l := val.(*logger)
+		l.mode = mode
+		l.updateMode()
+		g.logger.Store(key.(LEVEL), l)
+		return true
+	})
+
+	return g
+}
+
+// SetLevelMode set glg logging mode* per level
+func (g *Glg) SetLevelMode(level LEVEL, mode MODE) *Glg {
+	lev, ok := g.logger.Load(level)
+	if ok {
+		l := lev.(*logger)
+		l.mode = mode
+		l.updateMode()
+		g.logger.Store(level, l)
+	}
+
 	return g
 }
 
 // GetCurrentMode returns current logging mode
-func (g *Glg) GetCurrentMode(level string) int {
-	return g.mode[level]
+func (g *Glg) GetCurrentMode(level LEVEL) MODE {
+	l, ok := g.logger.Load(level)
+	if ok {
+		return l.(*logger).mode
+	}
+	return NONE
 }
 
 // InitWriter is initialize glg writer
 func (g *Glg) InitWriter() *Glg {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g = New()
+	g.logger.Range(func(key, val interface{}) bool {
+		l := val.(*logger)
+		l.writer = nil
+		l.updateMode()
+		g.logger.Store(key.(LEVEL), l)
+		return true
+	})
 	return g
 }
 
@@ -169,17 +316,15 @@ func (g *Glg) SetWriter(writer io.Writer) *Glg {
 	if writer == nil {
 		return g
 	}
-	g.mu.Lock()
-	if len(g.writer) == 0 {
-		for k := range g.std {
-			g.writer[k] = writer
-		}
-	} else {
-		for k := range g.writer {
-			g.writer[k] = writer
-		}
-	}
-	g.mu.Unlock()
+
+	g.logger.Range(func(key, val interface{}) bool {
+		l := val.(*logger)
+		l.writer = writer
+		l.updateMode()
+		g.logger.Store(key.(LEVEL), l)
+		return true
+	})
+
 	return g
 }
 
@@ -188,98 +333,171 @@ func (g *Glg) AddWriter(writer io.Writer) *Glg {
 	if writer == nil {
 		return g
 	}
-	g.mu.Lock()
-	if len(g.writer) == 0 {
-		for k := range g.std {
-			g.writer[k] = writer
+
+	g.logger.Range(func(key, val interface{}) bool {
+		l := val.(*logger)
+		if l.writer == nil {
+			l.writer = writer
+		} else {
+			l.writer = io.MultiWriter(l.writer, writer)
 		}
-	} else {
-		for k := range g.writer {
-			g.writer[k] = io.MultiWriter(g.writer[k], writer)
-		}
-	}
-	g.mu.Unlock()
+		l.updateMode()
+		g.logger.Store(key.(LEVEL), l)
+		return true
+	})
+
 	return g
 }
 
 // SetLevelColor sets the color for each level
-func (g *Glg) SetLevelColor(level string, color func(string) string) *Glg {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	g.colors[level] = color
+func (g *Glg) SetLevelColor(level LEVEL, color func(string) string) *Glg {
+	lev, ok := g.logger.Load(level)
+	if ok {
+		l := lev.(*logger)
+		l.color = color
+		g.logger.Store(level, l)
+	}
+
 	return g
 }
 
 // SetLevelWriter sets writer to glg std writer per logging level
-func (g *Glg) SetLevelWriter(level string, writer io.Writer) *Glg {
+func (g *Glg) SetLevelWriter(level LEVEL, writer io.Writer) *Glg {
 	if writer == nil {
 		return g
 	}
-	g.mu.Lock()
-	g.writer[level] = writer
-	g.mu.Unlock()
+
+	lev, ok := g.logger.Load(level)
+	if ok {
+		l := lev.(*logger)
+		l.writer = writer
+		l.updateMode()
+		g.logger.Store(level, l)
+	}
+
 	return g
 }
 
 // AddLevelWriter adds writer to glg std writer per logging level
-func (g *Glg) AddLevelWriter(level string, writer io.Writer) *Glg {
+func (g *Glg) AddLevelWriter(level LEVEL, writer io.Writer) *Glg {
 	if writer == nil {
 		return g
 	}
 
-	g.mu.Lock()
-	w, ok := g.writer[level]
+	lev, ok := g.logger.Load(level)
 	if ok {
-		g.writer[level] = io.MultiWriter(w, writer)
-	} else {
-		g.writer[level] = writer
+		l := lev.(*logger)
+		if l.writer != nil {
+			l.writer = io.MultiWriter(l.writer, writer)
+		} else {
+			l.writer = writer
+		}
+		l.updateMode()
+		g.logger.Store(level, l)
 	}
-	g.mu.Unlock()
+
 	return g
 }
 
-// AddStdLevel adds std log level
-func (g *Glg) AddStdLevel(level string, mode int, isColor bool) *Glg {
-	g.mu.Lock()
-	g.writer[level] = g.writer[INFO]
-	g.std[level] = os.Stdout
-	g.mode[level] = mode
-	g.colors[level] = Colorless
-	g.isColor[level] = isColor
-	g.mu.Unlock()
+// AddStdLevel adds std log level and returns LEVEL
+func (g *Glg) AddStdLevel(tag string, mode MODE, isColor bool) *Glg {
+	atomic.AddUint32(g.levelCounter, 1)
+	lev := LEVEL(atomic.LoadUint32(g.levelCounter))
+	g.levelMap.Store(tag, lev)
+	l := &logger{
+		writer:  nil,
+		std:     os.Stdout,
+		color:   Colorless,
+		isColor: isColor,
+		mode:    mode,
+		tag:     tag,
+	}
+	l.updateMode()
+	g.logger.Store(lev, l)
 	return g
 }
 
-// AddErrLevel adds error log level
-func (g *Glg) AddErrLevel(level string, mode int, isColor bool) *Glg {
-	g.mu.Lock()
-	g.writer[level] = g.writer[ERR]
-	g.std[level] = os.Stderr
-	g.mode[level] = mode
-	g.colors[level] = Red
-	g.isColor[level] = isColor
-	g.mu.Unlock()
+// AddErrLevel adds error log level and returns LEVEL
+func (g *Glg) AddErrLevel(tag string, mode MODE, isColor bool) *Glg {
+	atomic.AddUint32(g.levelCounter, 1)
+	lev := LEVEL(atomic.LoadUint32(g.levelCounter))
+	g.levelMap.Store(tag, lev)
+	l := &logger{
+		writer:  nil,
+		std:     os.Stderr,
+		color:   Red,
+		isColor: isColor,
+		mode:    mode,
+		tag:     tag,
+	}
+	l.updateMode()
+	g.logger.Store(lev, l)
 	return g
 }
 
 // EnableColor enables color output
 func (g *Glg) EnableColor() *Glg {
-	g.mu.Lock()
-	for level := range g.isColor {
-		g.isColor[level] = true
-	}
-	g.mu.Unlock()
+
+	g.logger.Range(func(key, val interface{}) bool {
+		l := val.(*logger)
+		l.isColor = true
+		l.updateMode()
+		g.logger.Store(key.(LEVEL), l)
+		return true
+	})
+
 	return g
 }
 
 // DisableColor disables color output
 func (g *Glg) DisableColor() *Glg {
-	g.mu.Lock()
-	for level := range g.isColor {
-		g.isColor[level] = false
-	}
-	g.mu.Unlock()
+
+	g.logger.Range(func(key, val interface{}) bool {
+		l := val.(*logger)
+		l.isColor = false
+		l.updateMode()
+		g.logger.Store(key.(LEVEL), l)
+		return true
+	})
+
 	return g
+}
+
+// EnableColor enables color output
+func (g *Glg) EnableLevelColor(lv LEVEL) *Glg {
+	ins, ok := g.logger.Load(lv)
+	if ok {
+		l := ins.(*logger)
+		l.isColor = true
+		l.updateMode()
+		g.logger.Store(lv, l)
+	}
+	return g
+}
+
+// DisableColor disables color output
+func (g *Glg) DisableLevelColor(lv LEVEL) *Glg {
+	ins, ok := g.logger.Load(lv)
+	if ok {
+		l := ins.(*logger)
+		l.isColor = false
+		l.updateMode()
+		g.logger.Store(lv, l)
+	}
+	return g
+}
+
+// TagStringToLevel converts level string to glg.LEVEL
+func (g *Glg) TagStringToLevel(tag string) LEVEL {
+	l, ok := g.levelMap.Load(tag)
+	if !ok {
+		return 255
+	}
+	return l.(LEVEL)
+}
+
+func TagStringToLevel(tag string) LEVEL {
+	return glg.TagStringToLevel(tag)
 }
 
 // FileWriter generates *osFile -> io.Writer
@@ -420,40 +638,36 @@ func White(str string) string {
 	return "\033[97m" + str + "\033[39m"
 }
 
-func (g *Glg) out(level, format string, val ...interface{}) error {
-	if g.mode[level] == NONE {
-		return nil
+func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
+	l, ok := g.logger.Load(level)
+	if !ok {
+		return fmt.Errorf("Log Level %s Not Found", level)
 	}
-
-	var buf = make([]byte, 0, len(level)+len(format)+25)
-	buf = append(append(append(append(time.Now().AppendFormat(buf[:0], "2006-01-02 15:04:05"), "\t["...), level...), "]:\t"...), format...)
-	var str = *(*string)(unsafe.Pointer(&buf))
+	log := l.(*logger)
 
 	var err error
-	if g.mode[level] == STD || g.mode[level] == BOTH {
-		_, ok := g.colors[level]
-		if g.isColor[level] && ok {
-			g.mu.Lock()
-			_, err = fmt.Fprintf(g.std[level], g.colors[level](str)+"\n", val...)
-			g.mu.Unlock()
-		} else {
-			g.mu.Lock()
-			_, err = fmt.Fprintf(g.std[level], str+"\n", val...)
-			g.mu.Unlock()
-		}
-		if err != nil {
-			return err
-		}
+	var buf = g.buffer.Get().([]byte)
+	switch log.writeMode {
+	case writeColorStd:
+		buf = append(append(append(append(g.timer.Load().([]byte), "\t["...), log.tag...), "]:\t"...), format...)
+		_, err = fmt.Fprintf(log.std, log.color(*(*string)(unsafe.Pointer(&buf)))+"\n", val...)
+	case writeStd:
+		buf = append(append(append(append(append(g.timer.Load().([]byte), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
+		_, err = fmt.Fprintf(log.std, *(*string)(unsafe.Pointer(&buf)), val...)
+	case writeWriter:
+		buf = append(append(append(append(append(g.timer.Load().([]byte), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
+		_, err = fmt.Fprintf(log.writer, *(*string)(unsafe.Pointer(&buf)), val...)
+	case writeColorBoth:
+		buf = append(append(append(append(g.timer.Load().([]byte), "\t["...), log.tag...), "]:\t"...), format...)
+		var str = *(*string)(unsafe.Pointer(&buf))
+		_, err = fmt.Fprintf(log.std, log.color(str)+"\n", val...)
+		_, err = fmt.Fprintf(log.writer, str+"\n", val...)
+	case writeBoth:
+		buf = append(append(append(append(append(g.timer.Load().([]byte), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
+		_, err = fmt.Fprintf(io.MultiWriter(log.std, log.writer), *(*string)(unsafe.Pointer(&buf)), val...)
 	}
+	g.buffer.Put(buf[:0])
 
-	if g.mode[level] == WRITER || g.mode[level] == BOTH {
-		g.mu.Lock()
-		w, ok := g.writer[level]
-		g.mu.Unlock()
-		if ok && w != nil {
-			_, err = fmt.Fprintf(w, str+"\n", val...)
-		}
-	}
 	return err
 }
 
@@ -525,7 +739,6 @@ func (g *Glg) Debug(val ...interface{}) error {
 // Debugf outputs formatted Debug level log
 func (g *Glg) Debugf(format string, val ...interface{}) error {
 	return g.out(DEBG, format, val...)
-
 }
 
 // Debug outputs Debug level log
@@ -536,7 +749,6 @@ func Debug(val ...interface{}) error {
 // Debugf outputs formatted Debug level log
 func Debugf(format string, val ...interface{}) error {
 	return glg.out(DEBG, format, val...)
-
 }
 
 // Warn outputs Warn level log
@@ -561,34 +773,22 @@ func Warnf(format string, val ...interface{}) error {
 
 // CustomLog outputs custom level log
 func (g *Glg) CustomLog(level string, val ...interface{}) error {
-	if _, ok := g.std[level]; ok {
-		return g.out(level, "%v", val...)
-	}
-	return fmt.Errorf("Log Level %s Not Found", level)
+	return g.out(g.TagStringToLevel(level), "%v", val...)
 }
 
 // CustomLogf outputs formatted custom level log
-func (g *Glg) CustomLogf(level, format string, val ...interface{}) error {
-	if _, ok := g.std[level]; ok {
-		return g.out(level, format, val...)
-	}
-	return fmt.Errorf("Log Level %s Not Found", level)
+func (g *Glg) CustomLogf(level string, format string, val ...interface{}) error {
+	return g.out(g.TagStringToLevel(level), format, val...)
 }
 
 // CustomLog outputs custom level log
 func CustomLog(level string, val ...interface{}) error {
-	if _, ok := glg.std[level]; ok {
-		return glg.out(level, "%v", val...)
-	}
-	return fmt.Errorf("Log Level %s Not Found", level)
+	return glg.out(glg.TagStringToLevel(level), "%v", val...)
 }
 
 // CustomLogf outputs formatted custom level log
-func CustomLogf(level, format string, val ...interface{}) error {
-	if _, ok := glg.std[level]; ok {
-		return glg.out(level, format, val...)
-	}
-	return fmt.Errorf("Log Level %s Not Found", level)
+func CustomLogf(level string, format string, val ...interface{}) error {
+	return glg.out(glg.TagStringToLevel(level), format, val...)
 }
 
 // Print outputs Print log
