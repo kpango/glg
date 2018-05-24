@@ -6,7 +6,7 @@ machine:
     PATH: "${GOPATH}/bin:${PATH}"
     BUILD_PATH: "${GOPATH}/src/github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
     GO15VENDOREXPERIMENT: 1
-    GODIST: "go1.8.3.linux-amd64.tar.gz"
+    GODIST: "go1.10.2.linux-amd64.tar.gz"
     CODECOV_TOKEN: "1227405d-f3e6-47e6-8ac5-5cd16ba2d1f7"
   post:
     - mkdir -p downloads

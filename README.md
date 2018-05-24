@@ -3,7 +3,7 @@
 glg is simple golang logging library
 
 ## Requirement
-Go 1.8
+Go 1.9
 
 ## Installation
 ```shell
@@ -18,7 +18,7 @@ go get github.com/kpango/glg
 	customLevel := "FINE"
 	customErrLevel := "CRIT"
 
-	glg.Get().
+	defer glg.Get().
 		SetMode(glg.BOTH). // default is STD
 		// SetMode(glg.NONE).  //nothing
 		// SetMode(glg.WRITER). // io.Writer logging
@@ -39,7 +39,9 @@ go get github.com/kpango/glg
 		// AddLevelWriter(glg.ERR, glg.FileWriter("/tmp/errors.log", 0666)). // add error log file destination
 		AddStdLevel(customLevel, glg.STD, false).   //user custom log level
 		AddErrLevel(customErrLevel, glg.STD, true). // user custom error log level
-		SetLevelColor(customErrLevel, glg.Red) // set color output to user custom level
+		SetLevelColor(glg.TagStringToLevel(customTag), glg.Cyan).  // set color output to user custom level
+		SetLevelColor(glg.TagStringToLevel(customErrTag), glg.Red). // set color output to user custom level
+		Stop() // stop glg timer daemon
 
 	glg.Info("info")
 	glg.Infof("%s : %s", "info", "formatted")
