@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/kpango/glg"
 )
@@ -12,7 +13,7 @@ type NetWorkLogger struct{}
 func (n NetWorkLogger) Write(b []byte) (int, error) {
 	// http.Post("localhost:8080/log", "", bytes.NewReader(b))
 	http.Get("http://127.0.0.1:8080/log")
-	// glg.Success("Requested")
+	glg.Success("Requested")
 	return 1, nil
 }
 
@@ -22,12 +23,12 @@ func main() {
 	// var customWriter io.Writer
 	infolog := glg.FileWriter("/tmp/info.log", 0666)
 
-	customLevel := "FINE"
-	customErrLevel := "CRIT"
+	customTag := "FINE"
+	customErrTag := "CRIT"
 
-	// errlog := glg.FileWriter("/tmp/error.log", 0666)
+	errlog := glg.FileWriter("/tmp/error.log", 0666)
 	defer infolog.Close()
-	// defer errlog.Close()
+	defer errlog.Close()
 	glg.Get().
 		SetMode(glg.BOTH). // default is STD
 		// DisableColor().
@@ -45,11 +46,12 @@ func main() {
 		// SetLevelWriter(glg.INFO, customWriter).
 		// SetLevelWriter(glg.WARN, customWriter).
 		// SetLevelWriter(glg.ERR, customWriter).
-		AddLevelWriter(glg.INFO, infolog). // add info log file destination
-		// AddLevelWriter(glg.ERR, errlog). // add error log file destination
-		AddStdLevel(customLevel, glg.STD, false).   //user custom log level
-		AddErrLevel(customErrLevel, glg.STD, true). // user custom error log level
-		SetLevelColor(customErrLevel, glg.Red)      // set color output to user custom level
+		AddLevelWriter(glg.INFO, infolog).                         // add info log file destination
+		AddLevelWriter(glg.ERR, errlog).                           // add error log file destination
+		AddStdLevel(customTag, glg.STD, false).                    //user custom log level
+		AddErrLevel(customErrTag, glg.STD, true).                  // user custom error log level
+		SetLevelColor(glg.TagStringToLevel(customTag), glg.Cyan).  // set color output to user custom level
+		SetLevelColor(glg.TagStringToLevel(customErrTag), glg.Red) // set color output to user custom level
 
 	glg.Info("info")
 	glg.Infof("%s : %s", "info", "formatted")
@@ -68,15 +70,41 @@ func main() {
 	glg.Print("Print")
 	glg.Println("Println")
 	glg.Printf("%s : %s", "printf", "formatted")
-	glg.CustomLog(customLevel, "custom logging")
-	glg.CustomLog(customErrLevel, "custom error logging")
+	glg.CustomLog(customTag, "custom logging")
+	glg.CustomLog(customErrTag, "custom error logging")
 
-	for i := 0; i < 100; i++ {
-		glg.Error("error")
-		glg.CustomLog(customLevel, "custom logging")
-	}
+	go func() {
+		time.Sleep(time.Second * 5)
+		for i := 0; i < 100; i++ {
+			glg.Info("info")
+		}
+	}()
 
-	// glg.Get().AddLevelWriter(glg.DEBG, NetWorkLogger{}) // add info log file destination
+	go func() {
+		time.Sleep(time.Second * 5)
+		for i := 0; i < 100; i++ {
+			glg.Debug("debug")
+			time.Sleep(time.Millisecond * 100)
+		}
+	}()
+
+	go func() {
+		time.Sleep(time.Second * 5)
+		for i := 0; i < 100; i++ {
+			glg.Warn("warn")
+		}
+	}()
+
+	go func() {
+		time.Sleep(time.Second * 5)
+		for i := 0; i < 100; i++ {
+			glg.Error("error")
+			time.Sleep(time.Millisecond * 100)
+			glg.CustomLog(customTag, "custom logging")
+		}
+	}()
+
+	glg.Get().AddLevelWriter(glg.DEBG, NetWorkLogger{}) // add info log file destination
 
 	http.Handle("/glg", glg.HTTPLoggerFunc("glg sample", func(w http.ResponseWriter, r *http.Request) {
 		glg.Info("glg HTTP server logger sample")
