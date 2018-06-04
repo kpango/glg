@@ -615,6 +615,35 @@ func TestGlg_AddErrLevel(t *testing.T) {
 	}
 }
 
+func TestGlg_SetPrefix(t *testing.T) {
+	tests := []struct {
+		prefix string
+		name   string
+		glg    *Glg
+		want   string
+	}{
+		{
+			name:   "Prefix GLG",
+			glg:    New(),
+			prefix: "GLG",
+			want:   "GLG",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.glg.SetPrefix(tt.prefix)
+			buf := new(bytes.Buffer)
+			tt.glg.SetWriter(buf)
+			tt.glg.SetMode(WRITER)
+			tt.glg.Println("sample")
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("SetPrefix = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+
+}
+
 func TestGlg_EnableColor(t *testing.T) {
 	tests := []struct {
 		name string
