@@ -810,7 +810,7 @@ func (g *Glg) Print(val ...interface{}) error {
 
 // Println outputs fixed line Print log
 func (g *Glg) Println(val ...interface{}) error {
-	return g.out(PRINT, "%v\n", val...)
+	return g.out(PRINT, "%v", val...)
 }
 
 // Printf outputs formatted Print log
@@ -825,7 +825,7 @@ func Print(val ...interface{}) error {
 
 // Println outputs fixed line Print log
 func Println(val ...interface{}) error {
-	return glg.out(PRINT, "%v\n", val...)
+	return glg.out(PRINT, "%v", val...)
 }
 
 // Printf outputs formatted Print log
@@ -880,7 +880,7 @@ func (g *Glg) Fatal(val ...interface{}) {
 
 // Fatalln outputs line fixed Failed log and exit program
 func (g *Glg) Fatalln(val ...interface{}) {
-	g.Fatalf("%v\n", val...)
+	g.Fatalf("%v", val...)
 }
 
 // Fatalf outputs formatted Failed log and exit program
@@ -907,5 +907,5 @@ func Fatalf(format string, val ...interface{}) {
 
 // Fatalln outputs line fixed Failed log and exit program
 func Fatalln(val ...interface{}) {
-	glg.Fatalf("%v\n", val...)
+	glg.Fatalf("%v", val...)
 }
