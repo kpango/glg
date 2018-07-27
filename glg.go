@@ -233,9 +233,7 @@ func (g *Glg) startTimerD() *Glg {
 	g.timer = new(atomic.Value)
 	timeFormat := "2006-01-02 15:04:05"
 
-	buf := g.buffer.Get().([]byte)
-	g.timer.Store(time.Now().AppendFormat(buf[:0], timeFormat))
-	g.buffer.Put(buf[:0])
+	g.storeTime(timeFormat)
 
 	var ctx context.Context
 	ctx, g.cancel = context.WithCancel(context.Background())
@@ -248,14 +246,18 @@ func (g *Glg) startTimerD() *Glg {
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				buf := g.buffer.Get().([]byte)
-				g.timer.Store(time.Now().AppendFormat(buf[:0], timeFormat))
-				g.buffer.Put(buf[:0])
+				g.storeTime(timeFormat)
 			}
 		}
 	}()
 
 	return g
+}
+
+func (g *Glg) storeTime(format string) {
+	buf := g.buffer.Get().([]byte)
+	g.timer.Store(time.Now().AppendFormat(buf[:0], format))
+	g.buffer.Put(buf[:0])
 }
 
 // Stop stops glg timer daemon
@@ -644,10 +646,13 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 	if !ok {
 		return fmt.Errorf("Log Level %s Not Found", level)
 	}
-	log := l.(*logger)
 
-	var err error
-	var buf = g.buffer.Get().([]byte)
+	var (
+		err error
+		buf = g.buffer.Get().([]byte)
+		log = l.(*logger)
+	)
+
 	switch log.writeMode {
 	case writeColorStd:
 		buf = append(append(append(append(g.timer.Load().([]byte), "\t["...), log.tag...), "]:\t"...), format...)
