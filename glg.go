@@ -12,6 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 	"unsafe"
+
+	"github.com/kpango/fastime"
 )
 
 // Glg is glg base struct
@@ -259,7 +261,7 @@ func (g *Glg) startTimerD() *Glg {
 
 func (g *Glg) storeTime(format string) {
 	buf := g.buffer.Get().([]byte)
-	g.timer.Store(time.Now().AppendFormat(buf[:0], format))
+	g.timer.Store(fastime.Now().AppendFormat(buf[:0], format))
 	g.buffer.Put(buf[:0])
 }
 
@@ -560,12 +562,12 @@ func FileWriter(path string, perm os.FileMode) *os.File {
 // HTTPLogger is simple http access logger
 func (g *Glg) HTTPLogger(name string, handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
+		start := fastime.Now()
 
 		handler.ServeHTTP(w, r)
 
 		err := g.Logf("Method: %s\tURI: %s\tName: %s\tTime: %s",
-			r.Method, r.RequestURI, name, time.Since(start).String())
+			r.Method, r.RequestURI, name, fastime.Now().Sub(start).String())
 
 		if err != nil {
 			err = g.Error(err)
@@ -579,12 +581,12 @@ func (g *Glg) HTTPLogger(name string, handler http.Handler) http.Handler {
 // HTTPLoggerFunc is simple http access logger
 func (g *Glg) HTTPLoggerFunc(name string, hf http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
+		start := fastime.Now()
 
 		hf(w, r)
 
 		err := g.Logf("Method: %s\tURI: %s\tName: %s\tTime: %s",
-			r.Method, r.RequestURI, name, time.Since(start).String())
+			r.Method, r.RequestURI, name, fastime.Now().Sub(start).String())
 
 		if err != nil {
 			err = g.Error(err)
