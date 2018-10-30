@@ -687,21 +687,21 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 
 	switch log.writeMode {
 	case writeColorStd:
-		buf = append(append(append(append(g.timer.Load().([]byte), "\t["...), log.tag...), "]:\t"...), format...)
+		buf = append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...)
 		_, err = fmt.Fprintf(log.std, log.color(*(*string)(unsafe.Pointer(&buf)))+"\n", val...)
 	case writeStd:
-		buf = append(append(append(append(append(g.timer.Load().([]byte), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
+		buf = append(append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
 		_, err = fmt.Fprintf(log.std, *(*string)(unsafe.Pointer(&buf)), val...)
 	case writeWriter:
-		buf = append(append(append(append(append(g.timer.Load().([]byte), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
+		buf = append(append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
 		_, err = fmt.Fprintf(log.writer, *(*string)(unsafe.Pointer(&buf)), val...)
 	case writeColorBoth:
-		buf = append(append(append(append(g.timer.Load().([]byte), "\t["...), log.tag...), "]:\t"...), format...)
+		buf = append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...)
 		var str = *(*string)(unsafe.Pointer(&buf))
 		_, err = fmt.Fprintf(log.std, log.color(str)+"\n", val...)
 		_, err = fmt.Fprintf(log.writer, str+"\n", val...)
 	case writeBoth:
-		buf = append(append(append(append(append(g.timer.Load().([]byte), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
+		buf = append(append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
 		_, err = fmt.Fprintf(io.MultiWriter(log.std, log.writer), *(*string)(unsafe.Pointer(&buf)), val...)
 	}
 	g.buffer.Put(buf[:0])
