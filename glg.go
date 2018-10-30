@@ -20,6 +20,7 @@ import (
 type Glg struct {
 	logger       sync.Map      // map[uint8]*logger
 	timer        *atomic.Value // []byte
+	mu           sync.Mutex
 	levelCounter *uint32
 	levelMap     sync.Map
 	buffer       sync.Pool
@@ -687,21 +688,31 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 
 	switch log.writeMode {
 	case writeColorStd:
+		g.mu.Lock()
 		buf = append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...)
+		g.mu.Unlock()
 		_, err = fmt.Fprintf(log.std, log.color(*(*string)(unsafe.Pointer(&buf)))+"\n", val...)
 	case writeStd:
+		g.mu.Lock()
 		buf = append(append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
+		g.mu.Unlock()
 		_, err = fmt.Fprintf(log.std, *(*string)(unsafe.Pointer(&buf)), val...)
 	case writeWriter:
+		g.mu.Lock()
 		buf = append(append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
+		g.mu.Unlock()
 		_, err = fmt.Fprintf(log.writer, *(*string)(unsafe.Pointer(&buf)), val...)
 	case writeColorBoth:
+		g.mu.Lock()
 		buf = append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...)
+		g.mu.Unlock()
 		var str = *(*string)(unsafe.Pointer(&buf))
 		_, err = fmt.Fprintf(log.std, log.color(str)+"\n", val...)
 		_, err = fmt.Fprintf(log.writer, str+"\n", val...)
 	case writeBoth:
+		g.mu.Lock()
 		buf = append(append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
+		g.mu.Unlock()
 		_, err = fmt.Fprintf(io.MultiWriter(log.std, log.writer), *(*string)(unsafe.Pointer(&buf)), val...)
 	}
 	g.buffer.Put(buf[:0])
