@@ -224,7 +224,6 @@ func New() *Glg {
 		g.logger.Store(k, v)
 	}
 
-	// return g.startTimerD()
 	return g
 }
 
@@ -235,37 +234,6 @@ func Get() *Glg {
 	})
 	return glg
 }
-
-// func (g *Glg) startTimerD() *Glg {
-// 	g.timer = new(atomic.Value)
-// 	timeFormat := "2006-01-02 15:04:05"
-//
-// 	g.storeTime(timeFormat)
-//
-// 	var ctx context.Context
-// 	ctx, g.cancel = context.WithCancel(context.Background())
-//
-// 	go func() {
-// 		ticker := time.NewTicker(time.Millisecond * 500)
-// 		for {
-// 			select {
-// 			case <-ctx.Done():
-// 				ticker.Stop()
-// 				return
-// 			case <-ticker.C:
-// 				g.storeTime(timeFormat)
-// 			}
-// 		}
-// 	}()
-//
-// 	return g
-// }
-//
-// func (g *Glg) storeTime(format string) {
-// 	buf := g.buffer.Get().([]byte)
-// 	g.timer.Store(fastime.Now().AppendFormat(buf[:0], format))
-// 	g.buffer.Put(buf[:0])
-// }
 
 // Stop stops glg timer daemon
 func (g *Glg) Stop() *Glg {
