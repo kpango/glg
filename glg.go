@@ -2,7 +2,6 @@
 package glg
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,12 +16,10 @@ import (
 
 // Glg is glg base struct
 type Glg struct {
-	logger       sync.Map      // map[uint8]*logger
-	timer        *atomic.Value // []byte
+	logger       sync.Map // map[uint8]*logger
 	levelCounter *uint32
 	levelMap     sync.Map
 	buffer       sync.Pool
-	cancel       context.CancelFunc
 }
 
 // MODE is logging mode (std only, writer only, std & writer)
@@ -233,12 +230,6 @@ func Get() *Glg {
 		glg = New()
 	})
 	return glg
-}
-
-// Stop stops glg timer daemon
-func (g *Glg) Stop() *Glg {
-	g.cancel()
-	return g
 }
 
 // SetMode sets glg logging mode
