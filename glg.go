@@ -2,7 +2,6 @@
 package glg
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,7 +9,6 @@ import (
 	"path/filepath"
 	"sync"
 	"sync/atomic"
-	"time"
 	"unsafe"
 
 	"github.com/kpango/fastime"
@@ -18,13 +16,10 @@ import (
 
 // Glg is glg base struct
 type Glg struct {
-	logger       sync.Map      // map[uint8]*logger
-	timer        *atomic.Value // []byte
-	mu           sync.Mutex
+	logger       sync.Map // map[uint8]*logger
 	levelCounter *uint32
 	levelMap     sync.Map
 	buffer       sync.Pool
-	cancel       context.CancelFunc
 }
 
 // MODE is logging mode (std only, writer only, std & writer)
@@ -84,6 +79,8 @@ const (
 
 	// Default Format
 	df = "%v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v "
+
+	timeFormat = "2006-01-02 15:04:05"
 )
 
 var (
@@ -224,7 +221,7 @@ func New() *Glg {
 		g.logger.Store(k, v)
 	}
 
-	return g.startTimerD()
+	return g
 }
 
 // Get returns singleton glg instance
@@ -233,43 +230,6 @@ func Get() *Glg {
 		glg = New()
 	})
 	return glg
-}
-
-func (g *Glg) startTimerD() *Glg {
-	g.timer = new(atomic.Value)
-	timeFormat := "2006-01-02 15:04:05"
-
-	g.storeTime(timeFormat)
-
-	var ctx context.Context
-	ctx, g.cancel = context.WithCancel(context.Background())
-
-	go func() {
-		ticker := time.NewTicker(time.Millisecond * 500)
-		for {
-			select {
-			case <-ctx.Done():
-				ticker.Stop()
-				return
-			case <-ticker.C:
-				g.storeTime(timeFormat)
-			}
-		}
-	}()
-
-	return g
-}
-
-func (g *Glg) storeTime(format string) {
-	buf := g.buffer.Get().([]byte)
-	g.timer.Store(fastime.Now().AppendFormat(buf[:0], format))
-	g.buffer.Put(buf[:0])
-}
-
-// Stop stops glg timer daemon
-func (g *Glg) Stop() *Glg {
-	g.cancel()
-	return g
 }
 
 // SetMode sets glg logging mode
@@ -688,31 +648,21 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 
 	switch log.writeMode {
 	case writeColorStd:
-		g.mu.Lock()
-		buf = append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...)
-		g.mu.Unlock()
+		buf = append(append(append(append(fastime.Now().AppendFormat(buf[:0], timeFormat), "\t["...), log.tag...), "]:\t"...), format...)
 		_, err = fmt.Fprintf(log.std, log.color(*(*string)(unsafe.Pointer(&buf)))+"\n", val...)
 	case writeStd:
-		g.mu.Lock()
-		buf = append(append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
-		g.mu.Unlock()
+		buf = append(append(append(append(append(fastime.Now().AppendFormat(buf[:0], timeFormat), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
 		_, err = fmt.Fprintf(log.std, *(*string)(unsafe.Pointer(&buf)), val...)
 	case writeWriter:
-		g.mu.Lock()
-		buf = append(append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
-		g.mu.Unlock()
+		buf = append(append(append(append(append(fastime.Now().AppendFormat(buf[:0], timeFormat), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
 		_, err = fmt.Fprintf(log.writer, *(*string)(unsafe.Pointer(&buf)), val...)
 	case writeColorBoth:
-		g.mu.Lock()
-		buf = append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...)
-		g.mu.Unlock()
+		buf = append(append(append(append(fastime.Now().AppendFormat(buf[:0], timeFormat), "\t["...), log.tag...), "]:\t"...), format...)
 		var str = *(*string)(unsafe.Pointer(&buf))
 		_, err = fmt.Fprintf(log.std, log.color(str)+"\n", val...)
 		_, err = fmt.Fprintf(log.writer, str+"\n", val...)
 	case writeBoth:
-		g.mu.Lock()
-		buf = append(append(append(append(append(append(buf[:0], g.timer.Load().([]byte)...), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
-		g.mu.Unlock()
+		buf = append(append(append(append(append(fastime.Now().AppendFormat(buf[:0], timeFormat), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
 		_, err = fmt.Fprintf(io.MultiWriter(log.std, log.writer), *(*string)(unsafe.Pointer(&buf)), val...)
 	}
 	g.buffer.Put(buf[:0])
