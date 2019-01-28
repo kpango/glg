@@ -960,3 +960,8 @@ func Fatalf(format string, val ...interface{}) {
 func Fatalln(val ...interface{}) {
 	glg.Fatalln(val...)
 }
+
+// ReplaceExitFunc replaces exit function. If you do not want to start os.Exit at glg.Fatal error, use this function to register arbitrary function
+func ReplaceExitFunc(fn func(i int)) {
+	exit = fn
+}
