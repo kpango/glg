@@ -43,6 +43,13 @@ func testExit(code int, f func()) (err error) {
 	return errors.New("expected exited but not")
 }
 
+func TestLEVEL_String(t *testing.T) {
+	l := LEVEL(10)
+	if l.String() != "" {
+		t.Error("invalid value")
+	}
+}
+
 func TestNew(t *testing.T) {
 	t.Run("Comparing simple instances", func(t *testing.T) {
 		ins1 := New()
@@ -530,6 +537,12 @@ func TestGlg_AddLevelWriter(t *testing.T) {
 			writer: nil,
 			level:  INFO,
 		},
+		{
+			glg:    New().AddStdLevel("glg is fast", WRITER, false),
+			name:   "Add INFO level nil writer",
+			writer: nil,
+			level:  LEVEL(10),
+		},
 	}
 
 	for _, tt := range tests {
@@ -610,6 +623,32 @@ func TestGlg_AddErrLevel(t *testing.T) {
 			ins, ok := l.(*logger)
 			if !ok || ins == nil {
 				t.Errorf("invalid glg instance type:\t%v", l)
+			}
+		})
+	}
+}
+
+func TestSetPrefix(t *testing.T) {
+	tests := []struct {
+		prefix string
+		name   string
+		want   string
+	}{
+		{
+			name:   "Prefix GLG",
+			prefix: "GLG",
+			want:   "GLG",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			SetPrefix(tt.prefix)
+			buf := new(bytes.Buffer)
+			Get().SetWriter(buf)
+			Get().SetMode(WRITER)
+			Println("sample")
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("SetPrefix = got %v want %v", buf.String(), tt.want)
 			}
 		})
 	}
@@ -780,7 +819,7 @@ func TestTagStringToLevel(t *testing.T) {
 			if tt.createFlg {
 				tt.g.AddStdLevel(tt.tag, STD, false)
 			}
-			got := glg.TagStringToLevel(tt.tag)
+			got := TagStringToLevel(tt.tag)
 			if got != tt.want {
 				t.Errorf("Glg.TagStringToLevel = %v, want %v", got, tt.want)
 			}
@@ -826,29 +865,41 @@ func TestGlg_TagStringToLevel(t *testing.T) {
 func TestFileWriter(t *testing.T) {
 
 	tests := []struct {
-		name string
-		path string
-		want string
+		name  string
+		path  string
+		want  string
+		isErr bool
 	}{
+
 		{
-			name: "sample file log",
-			path: "./sample.log",
-			want: "./sample.log",
+			name:  "sample file log",
+			path:  "./sample.log",
+			want:  "./sample.log",
+			isErr: false,
 		},
 		{
-			name: "error file log",
-			path: "./error.log",
-			want: "./error.log",
+			name:  "error file log",
+			path:  "./error.log",
+			want:  "./error.log",
+			isErr: false,
 		},
 		{
-			name: "empty",
-			path: "",
-			want: "",
+			name:  "empty",
+			path:  "",
+			want:  "",
+			isErr: false,
 		},
 		{
-			name: "root file log",
-			path: "/root.log",
-			want: "/root.log",
+			name:  "root file log",
+			path:  "/root.log",
+			want:  "/root.log",
+			isErr: false,
+		},
+		{
+			name:  "root file log",
+			path:  "/usr/tmp/root.log",
+			want:  "/usr/tmp/root.log",
+			isErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -856,7 +907,7 @@ func TestFileWriter(t *testing.T) {
 			f := FileWriter(tt.path, 0755)
 			if f != nil {
 				got := f.Name()
-				if !reflect.DeepEqual(got, tt.want) {
+				if !tt.isErr && !reflect.DeepEqual(got, tt.want) {
 					t.Errorf("FileWriter() = %v, want %v", got, tt.want)
 				}
 			}
@@ -2810,6 +2861,23 @@ func TestFatalln(t *testing.T) {
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Fatalln() = got %v want %v", buf.String(), want)
 			}
+		})
+	}
+}
+
+func TestReplaceExitFunc(t *testing.T) {
+	tests := []struct {
+		name string
+		fn   func(i int)
+	}{
+		{
+			name: "just pass",
+			fn:   func(i int) {},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ReplaceExitFunc(tt.fn)
 		})
 	}
 }
