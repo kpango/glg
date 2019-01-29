@@ -513,36 +513,51 @@ func TestGlg_AddLevelWriter(t *testing.T) {
 		name   string
 		writer io.Writer
 		level  LEVEL
+		multi  bool
 	}{
 		{
 			glg:    New(),
 			name:   "Info level",
 			writer: new(bytes.Buffer),
 			level:  INFO,
+			multi:  false,
 		},
 		{
 			glg:    New(),
 			name:   "Error level",
 			writer: new(bytes.Buffer),
 			level:  ERR,
+			multi:  false,
 		},
 		{
 			glg:    New(),
 			name:   "Append DEBG level",
 			writer: new(bytes.Buffer),
 			level:  DEBG,
+			multi:  false,
 		},
 		{
 			glg:    New(),
 			name:   "Add INFO level nil writer",
 			writer: nil,
 			level:  INFO,
+			multi:  false,
 		},
 		{
 			glg:    Get().AddStdLevel("glg is fast", BOTH, false),
-			name:   "Add INFO level nil writer",
+			name:   "Add Custom",
 			writer: new(bytes.Buffer),
 			level:  TagStringToLevel("glg is fast"),
+			multi:  false,
+		},
+		{
+			glg: Get().AddStdLevel("glg", BOTH, false).
+				AddLevelWriter(TagStringToLevel("glg"),
+					new(bytes.Buffer)),
+			name:   "Add Custom",
+			writer: new(bytes.Buffer),
+			level:  TagStringToLevel("glg"),
+			multi:  true,
 		},
 	}
 
@@ -558,7 +573,7 @@ func TestGlg_AddLevelWriter(t *testing.T) {
 			if !ok {
 				t.Errorf("invalid glg instance type:\t%v", l)
 			}
-			if tt.writer != nil && !reflect.DeepEqual(ins.writer, tt.writer) {
+			if !tt.multi && tt.writer != nil && !reflect.DeepEqual(ins.writer, tt.writer) {
 				t.Errorf("Glg.AddLevelWriter() = %v, want %v", ins.writer, tt.writer)
 			}
 		})
