@@ -1454,6 +1454,30 @@ func TestGlg_out(t *testing.T) {
 				3.6,
 			},
 		},
+		{
+			glg:    New().SetMode(NONE).DisableColor(),
+			name:   "not found level",
+			level:  LEVEL(10),
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			glg:    New().SetMode(NONE).DisableColor(),
+			name:   "too long argument log",
+			level:  LOG,
+			format: "",
+			val: func() []interface{} {
+				var vals []interface{}
+				for i := 0; i < 1000; i++ {
+					vals = append(vals, i)
+				}
+				return vals
+			}(),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
