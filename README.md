@@ -68,10 +68,8 @@ go get github.com/kpango/glg
 
 	// HTTP Handler Logger
 	http.Handle("/glg", glg.HTTPLoggerFunc("glg sample", func(w http.ResponseWriter, r *http.Request) {
-
 		glg.Info("glg HTTP server logger sample")
 		fmt.Fprint(w, "glg HTTP server logger sample")
-
 	}))
 
 	http.ListenAndServe("port", nil)
