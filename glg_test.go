@@ -802,9 +802,9 @@ func TestTagStringToLevel(t *testing.T) {
 	}{
 		{
 			name:      "customTag",
-			g:         Get(),
+			g:         Get().Reset(),
 			tag:       "customTag",
-			want:      FATAL + 1,
+			want:      TagStringToLevel("customTag"),
 			createFlg: true,
 		},
 		{
@@ -840,7 +840,7 @@ func TestGlg_TagStringToLevel(t *testing.T) {
 			name:      "customTag",
 			g:         New(),
 			tag:       "customTag",
-			want:      FATAL + 1,
+			want:      TagStringToLevel("customTag"),
 			createFlg: true,
 		},
 		{
@@ -2879,6 +2879,32 @@ func TestReplaceExitFunc(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ReplaceExitFunc(tt.fn)
+		})
+	}
+}
+
+func TestGlg_Reset(t *testing.T) {
+	tests := []struct {
+		name string
+		tag  string
+		g    *Glg
+		want LEVEL
+	}{
+		{
+			name: "reset",
+			tag:  "glg",
+			g:    Get().Reset(),
+			want: 255,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.g.AddStdLevel(tt.tag, NONE, false)
+			tt.g.Reset()
+			got := tt.g.TagStringToLevel(tt.tag)
+			if tt.want == got {
+				t.Errorf("Reset() = got %v want %v", got, tt.want)
+			}
 		})
 	}
 }

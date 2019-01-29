@@ -915,3 +915,8 @@ func Fatalln(val ...interface{}) {
 func ReplaceExitFunc(fn func(i int)) {
 	exit = fn
 }
+
+func (g *Glg) Reset() *Glg {
+	g = New()
+	return g
+}
