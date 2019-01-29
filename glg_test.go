@@ -507,6 +507,7 @@ func TestGlg_SetLevelWriter(t *testing.T) {
 }
 
 func TestGlg_AddLevelWriter(t *testing.T) {
+
 	tests := []struct {
 		glg    *Glg
 		name   string
@@ -538,10 +539,10 @@ func TestGlg_AddLevelWriter(t *testing.T) {
 			level:  INFO,
 		},
 		{
-			glg:    New().AddStdLevel("glg is fast", WRITER, false),
+			glg:    Get().AddStdLevel("glg is fast", BOTH, false),
 			name:   "Add INFO level nil writer",
-			writer: nil,
-			level:  LEVEL(10),
+			writer: new(bytes.Buffer),
+			level:  TagStringToLevel("glg is fast"),
 		},
 	}
 
