@@ -1,0 +1,124 @@
+alias:
+  default: &default
+    working_directory: /go/src/github.com/kpango/glg
+    docker:
+      - image: circleci/golang:1.11.3
+        environment:
+          GOPATH: "/go"
+          GO111MODULE: "on"
+          REPO_NAME: "kpango"
+          IMAGE_NAME: "glg"
+          GITHUB_API: "https://api.github.com/"
+          DOCKER_USER: "kpango"
+  setup_remote_docker: &setup_remote_docker
+    version: 18.06.0-ce
+    docker_layer_caching: true
+
+version: 2
+jobs:
+  test:
+    <<: *default
+    steps:
+      - checkout
+      - restore_cache:
+          key: gosum-{{ .Branch }}-{{ checksum "go.sum" }}
+      - run:
+          name: preparation
+          command: |
+            go mod vendor
+      - run:
+          name: run tests
+          command: |
+            go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
+            go tool cover -html=coverage.out -o coverage.html
+            bash <(curl -s https://codecov.io/bash)
+      - store_artifacts:
+          path: ./coverage.html
+      - save_cache:
+          key: gosum-{{ .Branch }}-{{ checksum "go.sum" }}
+          paths:
+            - ./vendor
+  versioning:
+    <<: *default
+    steps:
+      - checkout
+      - run:
+          name: check
+          command: |
+            mkdir -p $HOME/.ssh/ && echo -e "Host github.com\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
+            LAST_COMMIT=`git log -1 --pretty=%B`
+            VERSION=`git describe --abbrev=0 --tags`
+            touch ./.tag
+            if [ ! -z "`git diff $VERSION`" -o -z "$VERSION" ]; then
+              VERSION=${VERSION:-'0.0.0'}
+              MAJOR="${VERSION%%.*}"; VERSION="${VERSION#*.}"
+              MINOR="${VERSION%%.*}"; VERSION="${VERSION#*.}"
+              PATCH="${VERSION%%.*}"; VERSION="${VERSION#*.}"
+              if echo $LAST_COMMIT | grep "\[\(major\|MAJOR\)\]" > /dev/null; then
+                MAJOR=$((MAJOR+1))
+                echo "$MAJOR.0.0" > ./.tag
+              elif echo $LAST_COMMIT | grep "\[\(minor\|MINOR\)\]" > /dev/null; then
+                MINOR=$((MINOR+1))
+                echo "$MAJOR.$MINOR.0" > ./.tag
+              elif echo $LAST_COMMIT | grep "\[\(patch\|PATCH\)\]" > /dev/null; then
+                PATCH=$((PATCH+1))
+                echo "$MAJOR.$MINOR.$PATCH" > ./.tag
+              fi
+            fi
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+  push:
+    <<: *default
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: push tag and check PR body
+          command: |
+            mkdir -p $HOME/.ssh/ && echo -e "Host github.com\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
+            TAG=`cat ./.tag`
+            if [ ! -z "$TAG" ]; then
+              echo $TAG
+              git tag $TAG
+              git push https://${GITHUB_ACCESS_TOKEN}:x-oauth-basic@github.com/${REPO_NAME}/${IMAGE_NAME} --tags
+            fi
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+  gh_release:
+    <<: *default
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: release
+          command: |
+            mkdir -p $HOME/.ssh/ && echo -e "Host github.com\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
+            TAG=`cat ./.tag`
+            if [ ! -z "$TAG" ]; then
+              echo "Create release: ${TAG}"
+              curl -H "Authorization: token ${GITHUB_ACCESS_TOKEN}" \
+                   -X POST \
+                   -d "{\"tag_name\": \"${TAG}\"}" \
+                   ${GITHUB_API}repos/${REPO_NAME}/${IMAGE_NAME}/releases
+            fi
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - test
+      - versioning:
+          filters:
+            branches:
+              only:
+                - master
+      - push:
+          requires:
+            - versioning
+      - gh_release:
+          requires:
+            - push
