@@ -632,23 +632,23 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		log = l.(*logger)
 	)
 
+	buf = append(append(append(append(fastime.Now().AppendFormat(buf[:0], timeFormat), "\t["...), log.tag...), "]:\t"...), format...)
+
 	switch log.writeMode {
 	case writeColorStd:
-		buf = append(append(append(append(fastime.Now().AppendFormat(buf[:0], timeFormat), "\t["...), log.tag...), "]:\t"...), format...)
 		_, err = fmt.Fprintf(log.std, log.color(*(*string)(unsafe.Pointer(&buf)))+"\n", val...)
 	case writeStd:
-		buf = append(append(append(append(append(fastime.Now().AppendFormat(buf[:0], timeFormat), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
+		buf = append(buf, "\n"...)
 		_, err = fmt.Fprintf(log.std, *(*string)(unsafe.Pointer(&buf)), val...)
 	case writeWriter:
-		buf = append(append(append(append(append(fastime.Now().AppendFormat(buf[:0], timeFormat), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
+		buf = append(buf, "\n"...)
 		_, err = fmt.Fprintf(log.writer, *(*string)(unsafe.Pointer(&buf)), val...)
 	case writeColorBoth:
-		buf = append(append(append(append(fastime.Now().AppendFormat(buf[:0], timeFormat), "\t["...), log.tag...), "]:\t"...), format...)
 		var str = *(*string)(unsafe.Pointer(&buf))
 		_, err = fmt.Fprintf(log.std, log.color(str)+"\n", val...)
 		_, err = fmt.Fprintf(log.writer, str+"\n", val...)
 	case writeBoth:
-		buf = append(append(append(append(append(fastime.Now().AppendFormat(buf[:0], timeFormat), "\t["...), log.tag...), "]:\t"...), format...), "\n"...)
+		buf = append(buf, "\n"...)
 		_, err = fmt.Fprintf(io.MultiWriter(log.std, log.writer), *(*string)(unsafe.Pointer(&buf)), val...)
 	}
 	g.buffer.Put(buf[:0])
