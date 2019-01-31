@@ -519,21 +519,7 @@ func FileWriter(path string, perm os.FileMode) *os.File {
 
 // HTTPLogger is simple http access logger
 func (g *Glg) HTTPLogger(name string, handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := fastime.Now()
-
-		handler.ServeHTTP(w, r)
-
-		err := g.Logf("Method: %s\tURI: %s\tName: %s\tTime: %s",
-			r.Method, r.RequestURI, name, fastime.Now().Sub(start).String())
-
-		if err != nil {
-			err = g.Error(err)
-			if err != nil {
-				fmt.Println(err)
-			}
-		}
-	})
+	return g.HTTPLoggerFunc(name, handler.ServeHTTP)
 }
 
 // HTTPLoggerFunc is simple http access logger
@@ -902,6 +888,7 @@ func ReplaceExitFunc(fn func(i int)) {
 	exit = fn
 }
 
+// Reset provides parameter reset function for glg struct instance
 func (g *Glg) Reset() *Glg {
 	g = New()
 	return g

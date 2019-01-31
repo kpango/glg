@@ -998,11 +998,13 @@ func TestGlg_HTTPLoggerFunc(t *testing.T) {
 		uri  string
 	}
 	tests := []struct {
+		w    *bytes.Buffer
 		name string
 		args args
 		mode MODE
 	}{
 		{
+			w:    new(bytes.Buffer),
 			name: "http logger simple",
 			args: args{
 				name: "simple",
@@ -1011,6 +1013,7 @@ func TestGlg_HTTPLoggerFunc(t *testing.T) {
 			mode: WRITER,
 		},
 		{
+			w:    new(bytes.Buffer),
 			name: "http logger err",
 			args: args{
 				name: "err",
@@ -1019,6 +1022,7 @@ func TestGlg_HTTPLoggerFunc(t *testing.T) {
 			mode: WRITER,
 		},
 		{
+			w:    new(bytes.Buffer),
 			name: "none logger simple",
 			args: args{
 				name: "none",
@@ -1026,10 +1030,18 @@ func TestGlg_HTTPLoggerFunc(t *testing.T) {
 			},
 			mode: NONE,
 		},
+		{
+			w:    new(bytes.Buffer),
+			name: "http logger write to nil buffer error",
+			args: args{
+				name: "err",
+				uri:  "err",
+			},
+			mode: WRITER,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			w := new(bytes.Buffer)
 
 			req, err := http.NewRequest(http.MethodGet, tt.args.uri, nil)
 			if err != nil {
@@ -1040,12 +1052,12 @@ func TestGlg_HTTPLoggerFunc(t *testing.T) {
 			want := fmt.Sprintf("Method: %s\tURI: %s\tName: %s",
 				req.Method, req.RequestURI, tt.args.name)
 
-			g := New().SetMode(tt.mode).SetWriter(w)
+			g := New().SetMode(tt.mode).SetWriter(tt.w)
 
 			g.HTTPLoggerFunc(tt.args.name, func(w http.ResponseWriter, r *http.Request) {}).ServeHTTP(rr, req)
 
-			if !strings.Contains(w.String(), want) && tt.mode != NONE {
-				t.Errorf("Glg.HTTPLogger() = %v, want %v", w.String(), want)
+			if tt.w != nil && !strings.Contains(tt.w.String(), want) && tt.mode != NONE {
+				t.Errorf("Glg.HTTPLogger() = %v, want %v", tt.w.String(), want)
 			}
 		})
 	}
