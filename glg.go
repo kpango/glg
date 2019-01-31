@@ -78,7 +78,8 @@ const (
 	none
 
 	// Default Format
-	df = "%v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v "
+	df  = "%v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v "
+	dfl = len(df) / 3
 
 	timeFormat = "2006-01-02 15:04:05"
 )
@@ -629,17 +630,6 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		return fmt.Errorf("Log Level %s Not Found", level)
 	}
 
-	if format == "" {
-		if len(df)/3 > len(val) {
-			format = df[:len(val)*3-1]
-		} else {
-			for range val {
-				format += "%v "
-			}
-			format = format[:len(format)-1]
-		}
-	}
-
 	var (
 		err error
 		buf = g.buffer.Get().([]byte)
@@ -672,7 +662,7 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 
 // Log writes std log event
 func (g *Glg) Log(val ...interface{}) error {
-	return g.out(LOG, "", val...)
+	return g.out(LOG, blankFormat(len(val)), val...)
 }
 
 // Logf writes std log event with format
@@ -682,7 +672,7 @@ func (g *Glg) Logf(format string, val ...interface{}) error {
 
 // Log writes std log event
 func Log(val ...interface{}) error {
-	return glg.out(LOG, "", val...)
+	return glg.out(LOG, blankFormat(len(val)), val...)
 }
 
 // Logf writes std log event with format
@@ -692,7 +682,7 @@ func Logf(format string, val ...interface{}) error {
 
 // Info outputs Info level log
 func (g *Glg) Info(val ...interface{}) error {
-	return g.out(INFO, "", val...)
+	return g.out(INFO, blankFormat(len(val)), val...)
 }
 
 // Infof outputs formatted Info level log
@@ -702,7 +692,7 @@ func (g *Glg) Infof(format string, val ...interface{}) error {
 
 // Info outputs Info level log
 func Info(val ...interface{}) error {
-	return glg.out(INFO, "", val...)
+	return glg.out(INFO, blankFormat(len(val)), val...)
 }
 
 // Infof outputs formatted Info level log
@@ -712,7 +702,7 @@ func Infof(format string, val ...interface{}) error {
 
 // Success outputs Success level log
 func (g *Glg) Success(val ...interface{}) error {
-	return g.out(OK, "", val...)
+	return g.out(OK, blankFormat(len(val)), val...)
 }
 
 // Successf outputs formatted Success level log
@@ -722,7 +712,7 @@ func (g *Glg) Successf(format string, val ...interface{}) error {
 
 // Success outputs Success level log
 func Success(val ...interface{}) error {
-	return glg.out(OK, "", val...)
+	return glg.out(OK, blankFormat(len(val)), val...)
 }
 
 // Successf outputs formatted Success level log
@@ -732,7 +722,7 @@ func Successf(format string, val ...interface{}) error {
 
 // Debug outputs Debug level log
 func (g *Glg) Debug(val ...interface{}) error {
-	return g.out(DEBG, "", val...)
+	return g.out(DEBG, blankFormat(len(val)), val...)
 }
 
 // Debugf outputs formatted Debug level log
@@ -742,7 +732,7 @@ func (g *Glg) Debugf(format string, val ...interface{}) error {
 
 // Debug outputs Debug level log
 func Debug(val ...interface{}) error {
-	return glg.out(DEBG, "", val...)
+	return glg.out(DEBG, blankFormat(len(val)), val...)
 }
 
 // Debugf outputs formatted Debug level log
@@ -752,7 +742,7 @@ func Debugf(format string, val ...interface{}) error {
 
 // Warn outputs Warn level log
 func (g *Glg) Warn(val ...interface{}) error {
-	return g.out(WARN, "", val...)
+	return g.out(WARN, blankFormat(len(val)), val...)
 }
 
 // Warnf outputs formatted Warn level log
@@ -762,7 +752,7 @@ func (g *Glg) Warnf(format string, val ...interface{}) error {
 
 // Warn outputs Warn level log
 func Warn(val ...interface{}) error {
-	return glg.out(WARN, "", val...)
+	return glg.out(WARN, blankFormat(len(val)), val...)
 }
 
 // Warnf outputs formatted Warn level log
@@ -772,7 +762,7 @@ func Warnf(format string, val ...interface{}) error {
 
 // CustomLog outputs custom level log
 func (g *Glg) CustomLog(level string, val ...interface{}) error {
-	return g.out(g.TagStringToLevel(level), "", val...)
+	return g.out(g.TagStringToLevel(level), blankFormat(len(val)), val...)
 }
 
 // CustomLogf outputs formatted custom level log
@@ -782,7 +772,7 @@ func (g *Glg) CustomLogf(level string, format string, val ...interface{}) error 
 
 // CustomLog outputs custom level log
 func CustomLog(level string, val ...interface{}) error {
-	return glg.out(glg.TagStringToLevel(level), "", val...)
+	return glg.out(glg.TagStringToLevel(level), blankFormat(len(val)), val...)
 }
 
 // CustomLogf outputs formatted custom level log
@@ -792,12 +782,12 @@ func CustomLogf(level string, format string, val ...interface{}) error {
 
 // Print outputs Print log
 func (g *Glg) Print(val ...interface{}) error {
-	return g.out(PRINT, "", val...)
+	return g.out(PRINT, blankFormat(len(val)), val...)
 }
 
 // Println outputs fixed line Print log
 func (g *Glg) Println(val ...interface{}) error {
-	return g.out(PRINT, "", val...)
+	return g.out(PRINT, blankFormat(len(val)), val...)
 }
 
 // Printf outputs formatted Print log
@@ -807,12 +797,12 @@ func (g *Glg) Printf(format string, val ...interface{}) error {
 
 // Print outputs Print log
 func Print(val ...interface{}) error {
-	return glg.out(PRINT, "", val...)
+	return glg.out(PRINT, blankFormat(len(val)), val...)
 }
 
 // Println outputs fixed line Print log
 func Println(val ...interface{}) error {
-	return glg.out(PRINT, "", val...)
+	return glg.out(PRINT, blankFormat(len(val)), val...)
 }
 
 // Printf outputs formatted Print log
@@ -822,7 +812,7 @@ func Printf(format string, val ...interface{}) error {
 
 // Error outputs Error log
 func (g *Glg) Error(val ...interface{}) error {
-	return g.out(ERR, "", val...)
+	return g.out(ERR, blankFormat(len(val)), val...)
 }
 
 // Errorf outputs formatted Error log
@@ -832,7 +822,7 @@ func (g *Glg) Errorf(format string, val ...interface{}) error {
 
 // Error outputs Error log
 func Error(val ...interface{}) error {
-	return glg.out(ERR, "", val...)
+	return glg.out(ERR, blankFormat(len(val)), val...)
 }
 
 // Errorf outputs formatted Error log
@@ -842,7 +832,7 @@ func Errorf(format string, val ...interface{}) error {
 
 // Fail outputs Failed log
 func (g *Glg) Fail(val ...interface{}) error {
-	return g.out(FAIL, "", val...)
+	return g.out(FAIL, blankFormat(len(val)), val...)
 }
 
 // Failf outputs formatted Failed log
@@ -852,7 +842,7 @@ func (g *Glg) Failf(format string, val ...interface{}) error {
 
 // Fail outputs Failed log
 func Fail(val ...interface{}) error {
-	return glg.out(FAIL, "", val...)
+	return glg.out(FAIL, blankFormat(len(val)), val...)
 }
 
 // Failf outputs formatted Failed log
@@ -862,7 +852,7 @@ func Failf(format string, val ...interface{}) error {
 
 // Fatal outputs Failed log and exit program
 func (g *Glg) Fatal(val ...interface{}) {
-	err := g.out(FATAL, "", val...)
+	err := g.out(FATAL, blankFormat(len(val)), val...)
 	if err != nil {
 		err = g.Error(err.Error())
 		if err != nil {
@@ -874,7 +864,7 @@ func (g *Glg) Fatal(val ...interface{}) {
 
 // Fatalln outputs line fixed Failed log and exit program
 func (g *Glg) Fatalln(val ...interface{}) {
-	err := g.out(FATAL, "", val...)
+	err := g.out(FATAL, blankFormat(len(val)), val...)
 	if err != nil {
 		err = g.Error(err.Error())
 		if err != nil {
@@ -919,4 +909,15 @@ func ReplaceExitFunc(fn func(i int)) {
 func (g *Glg) Reset() *Glg {
 	g = New()
 	return g
+}
+
+func blankFormat(l int) string {
+	if dfl > l {
+		return df[:l*3-1]
+	}
+	format := df
+	for c := l / dfl; c >= 0; c-- {
+		format += df
+	}
+	return format[:l*3-1]
 }
