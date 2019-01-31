@@ -2947,3 +2947,47 @@ func TestGlg_Reset(t *testing.T) {
 		})
 	}
 }
+
+func Test_blankFormat(t *testing.T) {
+	tests := []struct {
+		name string
+		vals []interface{}
+		want string
+	}{
+		{
+			name: "10 argument log",
+			vals: func() []interface{} {
+				var vals []interface{}
+				for i := 0; i < 10; i++ {
+					vals = append(vals, i)
+				}
+				return vals
+			}(),
+			want: "%v %v %v %v %v %v %v %v %v %v",
+		},
+		{
+			name: "too long argument log",
+			vals: func() []interface{} {
+				var vals []interface{}
+				for i := 0; i < 1000; i++ {
+					vals = append(vals, i)
+				}
+				return vals
+			}(),
+			want: func() string {
+				var str string
+				for i := 0; i < 1000; i++ {
+					str += "%v "
+				}
+				return str[:len(str)-1]
+			}(),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := blankFormat(len(tt.vals)); got != tt.want {
+				t.Errorf("blankFormat() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
