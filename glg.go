@@ -126,17 +126,13 @@ func (l *logger) updateMode() *logger {
 	switch {
 	case l.mode == WRITER && l.writer != nil:
 		l.writeMode = writeWriter
-	case l.mode == BOTH && l.isColor && l.writer == nil:
-		l.writeMode = writeColorStd
 	case l.mode == BOTH && l.isColor && l.writer != nil:
 		l.writeMode = writeColorBoth
-	case l.mode == BOTH && !l.isColor && l.writer == nil:
-		l.writeMode = writeStd
 	case l.mode == BOTH && !l.isColor && l.writer != nil:
 		l.writeMode = writeBoth
-	case l.mode == STD && l.isColor:
+	case l.isColor && ((l.mode == BOTH && l.writer == nil) || l.mode == STD):
 		l.writeMode = writeColorStd
-	case l.mode == STD && !l.isColor:
+	case !l.isColor && ((l.mode == BOTH && l.writer == nil) || l.mode == STD):
 		l.writeMode = writeStd
 	default:
 		l.writeMode = none
