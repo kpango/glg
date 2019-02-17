@@ -98,6 +98,4 @@ go get github.com/kpango/glg
 
 ## LICENSE
 glg released under MIT license, refer [LICENSE](https://github.com/kpango/glg/blob/master/LICENSE) file.
-
-
-[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fkpango%2Fglg.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fkpango%2Fglg?ref=badge_large)
+[![FOSSA Status](https://app.fossa.io/api/projects/git+github.com/kpango/glg.svg?type=large)](https://app.fossa.io/projects/git+github.com/kpango/glg?ref=badge_large)
