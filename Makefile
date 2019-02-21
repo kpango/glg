@@ -5,6 +5,7 @@ GO_VERSION:=$(shell go version)
 all: clean install lint test bench
 
 clean:
+	go clean ./...
 	rm -rf ./*.log
 	rm -rf ./*.svg
 	rm -rf ./go.mod
@@ -38,13 +39,14 @@ profile: clean init
 	go tool pprof --svg pprof/default-test.bin pprof/cpu-default.out > cpu-default.svg
 	go-torch -f bench/cpu-default-graph.svg pprof/default-test.bin pprof/cpu-default.out
 	go-torch --alloc_objects -f bench/mem-default-graph.svg pprof/default-test.bin pprof/mem-default.out
+	\
 	mv ./*.svg bench/
 
 lint:
 	gometalinter --enable-all . | rg -v comment
 
 test: clean init
-    GO111MODULE=on go test --race -v $(go list ./... | rg -v vendor)
+	GO111MODULE=on go test --race -v $(go list ./... | rg -v vendor)
 
 contributors:
 	git log --format='%aN <%aE>' | sort -fu > CONTRIBUTORS
