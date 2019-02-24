@@ -146,7 +146,20 @@ func (l *logger) updateMode() *logger {
 
 // New returns plain glg instance
 func New() *Glg {
-	m := map[LEVEL]*logger{
+
+	g := &Glg{
+		levelCounter: new(uint32),
+		buffer: sync.Pool{
+			New: func() interface{} {
+				return bytes.NewBuffer(make([]byte, 0, bufferSize))
+			},
+		},
+		ft: fastime.New().SetFormat(timeFormat).StartTimerD(context.Background(), time.Millisecond),
+	}
+
+	atomic.StoreUint32(g.levelCounter, uint32(FATAL))
+
+	for lev, log := range map[LEVEL]*logger{
 		// standard out
 		PRINT: &logger{
 			std:     os.Stdout,
@@ -203,24 +216,10 @@ func New() *Glg {
 			isColor: true,
 			mode:    STD,
 		},
-	}
-
-	g := &Glg{
-		levelCounter: new(uint32),
-		buffer: sync.Pool{
-			New: func() interface{} {
-				return bytes.NewBuffer(make([]byte, 0, bufferSize))
-			},
-		},
-		ft: fastime.New().SetFormat(timeFormat).StartTimerD(context.Background(), time.Millisecond),
-	}
-
-	atomic.StoreUint32(g.levelCounter, uint32(FATAL))
-
-	for k, v := range m {
-		v.tag = k.String()
-		v.updateMode()
-		g.logger.Store(k, v)
+	} {
+		log.tag = lev.String()
+		log.updateMode()
+		g.logger.Store(lev, log)
 	}
 
 	return g
