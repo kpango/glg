@@ -42,6 +42,12 @@ profile: clean init
 	\
 	mv ./*.svg bench/
 
+cpu:
+	go tool pprof pprof/glg-test.bin pprof/cpu-glg.out
+
+mem:
+	go tool pprof --alloc_space pprof/glg-test.bin pprof/mem-glg.out
+
 lint:
 	gometalinter --enable-all . | rg -v comment
 
