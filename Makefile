@@ -5,6 +5,7 @@ GO_VERSION:=$(shell go version)
 all: clean install lint test bench
 
 clean:
+	go clean ./...
 	rm -rf ./*.log
 	rm -rf ./*.svg
 	rm -rf ./go.mod
@@ -40,6 +41,12 @@ profile: clean init
 	go-torch --alloc_objects -f bench/mem-default-graph.svg pprof/default-test.bin pprof/mem-default.out
 	\
 	mv ./*.svg bench/
+
+cpu:
+	go tool pprof pprof/glg-test.bin pprof/cpu-glg.out
+
+mem:
+	go tool pprof --alloc_space pprof/glg-test.bin pprof/mem-glg.out
 
 lint:
 	gometalinter --enable-all . | rg -v comment

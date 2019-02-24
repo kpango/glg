@@ -2,6 +2,8 @@
 package glg
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,6 +11,7 @@ import (
 	"path/filepath"
 	"sync"
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"github.com/kpango/fastime"
@@ -20,6 +23,7 @@ type Glg struct {
 	levelCounter *uint32
 	levelMap     sync.Map
 	buffer       sync.Pool
+	ft           *fastime.Fastime
 }
 
 // MODE is logging mode (std only, writer only, std & writer)
@@ -205,9 +209,10 @@ func New() *Glg {
 		levelCounter: new(uint32),
 		buffer: sync.Pool{
 			New: func() interface{} {
-				return make([]byte, bufferSize)
+				return bytes.NewBuffer(make([]byte, 0, bufferSize))
 			},
 		},
+		ft: fastime.New().SetFormat(timeFormat).StartTimerD(context.Background(), time.Millisecond),
 	}
 
 	atomic.StoreUint32(g.levelCounter, uint32(FATAL))
@@ -525,12 +530,12 @@ func (g *Glg) HTTPLogger(name string, handler http.Handler) http.Handler {
 // HTTPLoggerFunc is simple http access logger
 func (g *Glg) HTTPLoggerFunc(name string, hf http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := fastime.Now()
+		start := g.ft.Now()
 
 		hf(w, r)
 
 		err := g.Logf("Method: %s\tURI: %s\tName: %s\tTime: %s",
-			r.Method, r.RequestURI, name, fastime.Now().Sub(start).String())
+			r.Method, r.RequestURI, name, g.ft.Now().Sub(start).String())
 
 		if err != nil {
 			err = g.Error(err)
@@ -614,11 +619,11 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 
 	var (
 		err error
-		buf = g.buffer.Get().([]byte)
+		b   = g.buffer.Get().(*bytes.Buffer)
 		log = l.(*logger)
 	)
 
-	buf = append(append(append(append(fastime.Now().AppendFormat(buf[:0], timeFormat), "\t["...), log.tag...), "]:\t"...), format...)
+	buf := append(append(append(append(append(b.Bytes()[:0], g.ft.FormattedNow()...), "\t["...), log.tag...), "]:\t"...), format...)
 
 	switch log.writeMode {
 	case writeColorStd:
@@ -637,7 +642,8 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		buf = append(buf, "\n"...)
 		_, err = fmt.Fprintf(io.MultiWriter(log.std, log.writer), *(*string)(unsafe.Pointer(&buf)), val...)
 	}
-	g.buffer.Put(buf[:0])
+	b.Reset()
+	g.buffer.Put(b)
 
 	return err
 }
