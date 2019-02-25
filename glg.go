@@ -613,32 +613,42 @@ func White(str string) string {
 func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 	l, ok := g.logger.Load(level)
 	if !ok {
-		return fmt.Errorf("Log Level %s Not Found", level)
+		return fmt.Errorf("error:\tLog Level %s Not Found", level)
 	}
 
 	var (
+		buf []byte
 		err error
 		b   = g.buffer.Get().(*bytes.Buffer)
 		log = l.(*logger)
 	)
 
-	buf := append(append(append(append(append(b.Bytes()[:0], g.ft.FormattedNow()...), "\t["...), log.tag...), "]:\t"...), format...)
+	b.Write(g.ft.FormattedNow())
+	b.WriteString("\t[")
+	b.WriteString(log.tag)
+	b.WriteString("]:\t")
+	b.WriteString(format)
 
 	switch log.writeMode {
 	case writeColorStd:
+		buf = b.Bytes()
 		_, err = fmt.Fprintf(log.std, log.color(*(*string)(unsafe.Pointer(&buf)))+"\n", val...)
 	case writeStd:
-		buf = append(buf, "\n"...)
+		b.WriteString("\n")
+		buf = b.Bytes()
 		_, err = fmt.Fprintf(log.std, *(*string)(unsafe.Pointer(&buf)), val...)
 	case writeWriter:
-		buf = append(buf, "\n"...)
+		b.WriteString("\n")
+		buf = b.Bytes()
 		_, err = fmt.Fprintf(log.writer, *(*string)(unsafe.Pointer(&buf)), val...)
 	case writeColorBoth:
+		buf = b.Bytes()
 		var str = *(*string)(unsafe.Pointer(&buf))
 		_, err = fmt.Fprintf(log.std, log.color(str)+"\n", val...)
 		_, err = fmt.Fprintf(log.writer, str+"\n", val...)
 	case writeBoth:
-		buf = append(buf, "\n"...)
+		b.WriteString("\n")
+		buf = b.Bytes()
 		_, err = fmt.Fprintf(io.MultiWriter(log.std, log.writer), *(*string)(unsafe.Pointer(&buf)), val...)
 	}
 	b.Reset()
