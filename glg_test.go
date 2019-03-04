@@ -3013,13 +3013,18 @@ func TestGlg_RawString(t *testing.T) {
 	}{
 		{
 			name: "trim",
-			args: []byte(time.Now().Format(timeFormat) + "\t[" + INFO.String() + "]:\tHello Glg" + rc),
+			args: []byte(time.Now().Format(timeFormat) + "\t[" + INFO.String() + sep + "Hello Glg" + rc),
 			want: "Hello Glg",
 		},
 		{
+			name: "trim null",
+			args: []byte(time.Now().Format(timeFormat) + "\t[" + INFO.String() + sep + rc),
+			want: "",
+		},
+		{
 			name: "trim hard",
-			args: []byte(time.Now().Format(timeFormat) + "\t[" + INFO.String() + "]:\tHello Glg]:\tHello" + rc),
-			want: "Hello Glg]:\tHello",
+			args: []byte(time.Now().Format(timeFormat) + "\t[" + INFO.String() + sep + "Hello Glg" + sep + "Hello Again" + rc),
+			want: "Hello Glg" + sep + "Hello Again",
 		},
 	}
 	for _, tt := range tests {
@@ -3040,13 +3045,18 @@ func TestRawString(t *testing.T) {
 	}{
 		{
 			name: "trim",
-			args: []byte(time.Now().Format(timeFormat) + "\t[" + INFO.String() + "]:\tHello Glg" + rc),
+			args: []byte(time.Now().Format(timeFormat) + "\t[" + INFO.String() + sep + "Hello Glg" + rc),
 			want: "Hello Glg",
 		},
 		{
+			name: "trim null",
+			args: []byte(time.Now().Format(timeFormat) + "\t[" + INFO.String() + sep + rc),
+			want: "",
+		},
+		{
 			name: "trim hard",
-			args: []byte(time.Now().Format(timeFormat) + "\t[" + INFO.String() + "]:\tHello Glg]:\tHello" + rc),
-			want: "Hello Glg]:\tHello",
+			args: []byte(time.Now().Format(timeFormat) + "\t[" + INFO.String() + sep + "Hello Glg" + sep + "Hello Again" + rc),
+			want: "Hello Glg" + sep + "Hello Again",
 		},
 	}
 	for _, tt := range tests {
