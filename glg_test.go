@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 type ExitError int
@@ -2999,6 +3000,59 @@ func Test_blankFormat(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := blankFormat(len(tt.vals)); got != tt.want {
 				t.Errorf("blankFormat() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGlg_RawString(t *testing.T) {
+	tests := []struct {
+		name string
+		args []byte
+		want string
+	}{
+		{
+			name: "trim",
+			args: []byte(time.Now().Format(timeFormat) + "\t[" + INFO.String() + "]:\tHello Glg" + rc),
+			want: "Hello Glg",
+		},
+		{
+			name: "trim hard",
+			args: []byte(time.Now().Format(timeFormat) + "\t[" + INFO.String() + "]:\tHello Glg]:\tHello" + rc),
+			want: "Hello Glg]:\tHello",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := New()
+			if got := g.RawString(tt.args); got != tt.want {
+				t.Errorf("Glg.RawString() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRawString(t *testing.T) {
+	tests := []struct {
+		name string
+		args []byte
+		want string
+	}{
+		{
+			name: "trim",
+			args: []byte(time.Now().Format(timeFormat) + "\t[" + INFO.String() + "]:\tHello Glg" + rc),
+			want: "Hello Glg",
+		},
+		{
+			name: "trim hard",
+			args: []byte(time.Now().Format(timeFormat) + "\t[" + INFO.String() + "]:\tHello Glg]:\tHello" + rc),
+			want: "Hello Glg]:\tHello",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := glg.RawString(tt.args); got != tt.want {
+				t.Errorf("Glg.RawString() = %v, want %v", got, tt.want)
 			}
 		})
 	}
