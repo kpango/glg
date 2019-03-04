@@ -14,6 +14,7 @@ func (n NetWorkLogger) Write(b []byte) (int, error) {
 	// http.Post("localhost:8080/log", "", bytes.NewReader(b))
 	http.Get("http://127.0.0.1:8080/log")
 	glg.Success("Requested")
+	glg.Infof("RawString is %s", glg.RawString(b))
 	return 1, nil
 }
 

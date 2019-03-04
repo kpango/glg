@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -86,6 +87,13 @@ const (
 	dfl = len(df) / 3
 
 	timeFormat = "2006-01-02 15:04:05"
+
+	// return code
+	rc  = "\n"
+	rcl = len(rc)
+
+	sep  = "]:\t"
+	sepl = len(sep)
 )
 
 var (
@@ -472,6 +480,17 @@ func (g *Glg) DisableLevelColor(lv LEVEL) *Glg {
 	return g
 }
 
+// RawString returns raw log string exclude time & tags
+func (g *Glg) RawString(data []byte) string {
+	str := *(*string)(unsafe.Pointer(&data))
+	return str[strings.Index(str, sep)+sepl : len(str)-rcl]
+}
+
+// RawString returns raw log string exclude time & tags
+func RawString(data []byte) string {
+	return glg.RawString(data)
+}
+
 // TagStringToLevel converts level string to Glg.LEVEL
 func (g *Glg) TagStringToLevel(tag string) LEVEL {
 	l, ok := g.levelMap.Load(tag)
@@ -626,28 +645,28 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 	b.Write(g.ft.FormattedNow())
 	b.WriteString("\t[")
 	b.WriteString(log.tag)
-	b.WriteString("]:\t")
+	b.WriteString(sep)
 	b.WriteString(format)
 
 	switch log.writeMode {
 	case writeColorStd:
 		buf = b.Bytes()
-		_, err = fmt.Fprintf(log.std, log.color(*(*string)(unsafe.Pointer(&buf)))+"\n", val...)
+		_, err = fmt.Fprintf(log.std, log.color(*(*string)(unsafe.Pointer(&buf)))+rc, val...)
 	case writeStd:
-		b.WriteString("\n")
+		b.WriteString(rc)
 		buf = b.Bytes()
 		_, err = fmt.Fprintf(log.std, *(*string)(unsafe.Pointer(&buf)), val...)
 	case writeWriter:
-		b.WriteString("\n")
+		b.WriteString(rc)
 		buf = b.Bytes()
 		_, err = fmt.Fprintf(log.writer, *(*string)(unsafe.Pointer(&buf)), val...)
 	case writeColorBoth:
 		buf = b.Bytes()
 		var str = *(*string)(unsafe.Pointer(&buf))
-		_, err = fmt.Fprintf(log.std, log.color(str)+"\n", val...)
-		_, err = fmt.Fprintf(log.writer, str+"\n", val...)
+		_, err = fmt.Fprintf(log.std, log.color(str)+rc, val...)
+		_, err = fmt.Fprintf(log.writer, str+rc, val...)
 	case writeBoth:
-		b.WriteString("\n")
+		b.WriteString(rc)
 		buf = b.Bytes()
 		_, err = fmt.Fprintf(io.MultiWriter(log.std, log.writer), *(*string)(unsafe.Pointer(&buf)), val...)
 	}
