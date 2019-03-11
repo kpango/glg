@@ -746,6 +746,14 @@ func (g *Glg) Debugf(format string, val ...interface{}) error {
 	return g.out(DEBG, format, val...)
 }
 
+// DebugFunc outputs Debug level log returned from the function
+func (g *Glg) DebugFunc(f func() string) error {
+	if isModeEnable(DEBG) {
+		return g.out(DEBG, "%s", f())
+	}
+	return nil
+}
+
 // Debug outputs Debug level log
 func Debug(val ...interface{}) error {
 	return glg.out(DEBG, blankFormat(len(val)), val...)
@@ -754,6 +762,14 @@ func Debug(val ...interface{}) error {
 // Debugf outputs formatted Debug level log
 func Debugf(format string, val ...interface{}) error {
 	return glg.out(DEBG, format, val...)
+}
+
+// DebugFunc outputs Debug level log returned from the function
+func DebugFunc(f func() string) error {
+	if isModeEnable(DEBG) {
+		return glg.out(DEBG, "%s", f())
+	}
+	return nil
 }
 
 // Warn outputs Warn level log
@@ -766,6 +782,14 @@ func (g *Glg) Warnf(format string, val ...interface{}) error {
 	return g.out(WARN, format, val...)
 }
 
+// WarnFunc outputs Warn level log returned from the function
+func (g *Glg) WarnFunc(f func() string) error {
+	if isModeEnable(WARN) {
+		return g.out(WARN, "%s", f())
+	}
+	return nil
+}
+
 // Warn outputs Warn level log
 func Warn(val ...interface{}) error {
 	return glg.out(WARN, blankFormat(len(val)), val...)
@@ -774,6 +798,14 @@ func Warn(val ...interface{}) error {
 // Warnf outputs formatted Warn level log
 func Warnf(format string, val ...interface{}) error {
 	return glg.out(WARN, format, val...)
+}
+
+// WarnFunc outputs Warn level log returned from the function
+func WarnFunc(f func() string) error {
+	if isModeEnable(WARN) {
+		return glg.out(WARN, "%s", f())
+	}
+	return nil
 }
 
 // CustomLog outputs custom level log
@@ -836,6 +868,14 @@ func (g *Glg) Errorf(format string, val ...interface{}) error {
 	return g.out(ERR, format, val...)
 }
 
+// ErrorFunc outputs Error level log returned from the function
+func (g *Glg) ErrorFunc(f func() string) error {
+	if isModeEnable(ERR) {
+		return g.out(ERR, "%s", f())
+	}
+	return nil
+}
+
 // Error outputs Error log
 func Error(val ...interface{}) error {
 	return glg.out(ERR, blankFormat(len(val)), val...)
@@ -844,6 +884,14 @@ func Error(val ...interface{}) error {
 // Errorf outputs formatted Error log
 func Errorf(format string, val ...interface{}) error {
 	return glg.out(ERR, format, val...)
+}
+
+// ErrorFunc outputs Error level log returned from the function
+func ErrorFunc(f func() string) error {
+	if isModeEnable(ERR) {
+		return glg.out(ERR, "%s", f())
+	}
+	return nil
 }
 
 // Fail outputs Failed log
@@ -856,6 +904,14 @@ func (g *Glg) Failf(format string, val ...interface{}) error {
 	return g.out(FAIL, format, val...)
 }
 
+// FailFunc outputs Fail level log returned from the function
+func (g *Glg) FailFunc(f func() string) error {
+	if isModeEnable(FAIL) {
+		return g.out(FAIL, "%s", f())
+	}
+	return nil
+}
+
 // Fail outputs Failed log
 func Fail(val ...interface{}) error {
 	return glg.out(FAIL, blankFormat(len(val)), val...)
@@ -864,6 +920,14 @@ func Fail(val ...interface{}) error {
 // Failf outputs formatted Failed log
 func Failf(format string, val ...interface{}) error {
 	return glg.out(FAIL, format, val...)
+}
+
+// FailFunc outputs Fail level log returned from the function
+func FailFunc(f func() string) error {
+	if isModeEnable(FAIL) {
+		return glg.out(FAIL, "%s", f())
+	}
+	return nil
 }
 
 // Fatal outputs Failed log and exit program
@@ -937,4 +1001,9 @@ func blankFormat(l int) string {
 		format += df
 	}
 	return format[:l*3-1]
+}
+
+// isModeEnable returns the level has already turned on the logging
+func isModeEnable(l LEVEL) bool {
+	return Get().GetCurrentMode(l) != NONE
 }
