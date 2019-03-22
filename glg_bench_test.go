@@ -64,7 +64,7 @@ type MockWriter struct {
 }
 
 func (m MockWriter) Write(b []byte) (int, error) {
-	_ = string(b)
+	_ = b
 	return 0, nil
 }
 
