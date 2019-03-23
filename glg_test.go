@@ -1568,6 +1568,42 @@ func TestGlg_Logf(t *testing.T) {
 	}
 }
 
+func TestGlg_LogFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			g := New().SetMode(tt.logMode).SetWriter(buf)
+			g.LogFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("Glg.LogFunc() = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
+
 func TestLog(t *testing.T) {
 	tests := []struct {
 		name string
@@ -1626,6 +1662,42 @@ func TestLogf(t *testing.T) {
 			want := fmt.Sprintf(tt.format, tt.val...)
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Logf() = got %v want %v", buf.String(), want)
+			}
+		})
+	}
+}
+
+func TestLogFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			Get().SetMode(tt.logMode).SetWriter(buf)
+			LogFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("LogFunc() = got %v want %v", buf.String(), tt.want)
 			}
 		})
 	}
@@ -1694,6 +1766,41 @@ func TestGlg_Infof(t *testing.T) {
 	}
 }
 
+func TestGlg_InfoFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			g := New().SetMode(tt.logMode).SetWriter(buf)
+			g.InfoFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("Glg.InfoFunc() = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
 func TestInfo(t *testing.T) {
 	tests := []struct {
 		name string
@@ -1752,6 +1859,42 @@ func TestInfof(t *testing.T) {
 			want := fmt.Sprintf(tt.format, tt.val...)
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Infof() = got %v want %v", buf.String(), want)
+			}
+		})
+	}
+}
+
+func TestInfoFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			Get().SetMode(tt.logMode).SetWriter(buf)
+			InfoFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("InfoFunc() = got %v want %v", buf.String(), tt.want)
 			}
 		})
 	}
@@ -1820,6 +1963,41 @@ func TestGlg_Successf(t *testing.T) {
 	}
 }
 
+func TestGlg_SuccessFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			g := New().SetMode(tt.logMode).SetWriter(buf)
+			g.SuccessFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("Glg.SuccessFunc() = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
 func TestSuccess(t *testing.T) {
 	tests := []struct {
 		name string
@@ -1884,6 +2062,41 @@ func TestSuccessf(t *testing.T) {
 	}
 }
 
+func TestSuccessFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			Get().SetMode(tt.logMode).SetWriter(buf)
+			SuccessFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("Glg.SuccessFunc() = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
 func TestGlg_Debug(t *testing.T) {
 	tests := []struct {
 		name string
@@ -1942,6 +2155,42 @@ func TestGlg_Debugf(t *testing.T) {
 			want := fmt.Sprintf(tt.format, tt.val...)
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Debugf() = got %v want %v", buf.String(), want)
+			}
+		})
+	}
+}
+
+func TestGlg_DebugFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			g := New().SetMode(tt.logMode).SetWriter(buf)
+			g.DebugFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("Glg.DebugFunc() = got %v want %v", buf.String(), tt.want)
 			}
 		})
 	}
@@ -2010,6 +2259,42 @@ func TestDebugf(t *testing.T) {
 	}
 }
 
+func TestDebugFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			Get().SetMode(tt.logMode).SetWriter(buf)
+			DebugFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("Glg.LogFunc() = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
+
 func TestGlg_Warn(t *testing.T) {
 	tests := []struct {
 		name string
@@ -2073,6 +2358,41 @@ func TestGlg_Warnf(t *testing.T) {
 	}
 }
 
+func TestGlg_WarnFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			g := New().SetMode(tt.logMode).SetWriter(buf)
+			g.WarnFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("Glg.WarnFunc() = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
 func TestWarn(t *testing.T) {
 	tests := []struct {
 		name string
@@ -2136,6 +2456,41 @@ func TestWarnf(t *testing.T) {
 	}
 }
 
+func TestWarnFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			Get().SetMode(tt.logMode).SetWriter(buf)
+			WarnFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("WarnFunc() = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
 func TestGlg_CustomLog(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -2203,6 +2558,47 @@ func TestGlg_CustomLogf(t *testing.T) {
 			want := fmt.Sprintf(tt.format, tt.val...)
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.CustomLogf() = got %v want %v", buf.String(), want)
+			}
+		})
+	}
+}
+
+func TestGlg_CustomLogFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		level   string
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			level:   "custom",
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			level:   "custom",
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			g := New()
+			g.SetMode(tt.logMode).AddStdLevel(tt.level, tt.logMode, false)
+			g.SetWriter(buf)
+			g.CustomLogFunc(tt.level, tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("Glg.CustomLogFunc() = got %v want %v", buf.String(), tt.want)
 			}
 		})
 	}
@@ -2278,6 +2674,45 @@ func TestCustomLogf(t *testing.T) {
 	}
 }
 
+func TestCustomLogFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		level   string
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			level:   "custom",
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			level:   "custom",
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			Get().SetMode(tt.logMode).AddStdLevel(tt.level, tt.logMode, false)
+			Get().SetWriter(buf)
+			CustomLogFunc(tt.level, tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("CustomLogFunc() = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
 func TestGlg_Print(t *testing.T) {
 	tests := []struct {
 		name string
@@ -2361,6 +2796,42 @@ func TestGlg_Printf(t *testing.T) {
 			want := fmt.Sprintf(tt.format, tt.val...)
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Printf() = got %v want %v", buf.String(), want)
+			}
+		})
+	}
+}
+
+func TestGlg_PrintFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			g := New().SetMode(tt.logMode).SetWriter(buf)
+			g.PrintFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("Glg.PrintFunc() = got %v want %v", buf.String(), tt.want)
 			}
 		})
 	}
@@ -2454,6 +2925,42 @@ func TestPrintf(t *testing.T) {
 	}
 }
 
+func TestPrintFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			Get().SetMode(tt.logMode).SetWriter(buf)
+			PrintFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("PrintFunc() = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
+
 func TestGlg_Error(t *testing.T) {
 	tests := []struct {
 		name string
@@ -2512,6 +3019,42 @@ func TestGlg_Errorf(t *testing.T) {
 			want := fmt.Sprintf(tt.format, tt.val...)
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Errorf() = got %v want %v", buf.String(), want)
+			}
+		})
+	}
+}
+
+func TestGlg_ErrorFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			g := New().SetMode(tt.logMode).SetWriter(buf)
+			g.ErrorFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("Glg.ErrorFunc() = got %v want %v", buf.String(), tt.want)
 			}
 		})
 	}
@@ -2580,6 +3123,41 @@ func TestErrorf(t *testing.T) {
 	}
 }
 
+func TestErrorFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			Get().SetMode(tt.logMode).SetWriter(buf)
+			ErrorFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("ErrorFunc() = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
 func TestGlg_Fail(t *testing.T) {
 	tests := []struct {
 		name string
@@ -2643,6 +3221,41 @@ func TestGlg_Failf(t *testing.T) {
 	}
 }
 
+func TestGlg_FailFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			g := New().SetMode(tt.logMode).SetWriter(buf)
+			g.FailFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("Glg.FailFunc() = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
 func TestFail(t *testing.T) {
 	tests := []struct {
 		name string
@@ -2706,6 +3319,41 @@ func TestFailf(t *testing.T) {
 	}
 }
 
+func TestFailFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return "dummy"
+			},
+			want: "dummy",
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return "dummy"
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			Get().SetMode(tt.logMode).SetWriter(buf)
+			FailFunc(tt.f)
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("FailFunc() = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
 func TestGlg_Fatal(t *testing.T) {
 	tests := []struct {
 		name string
