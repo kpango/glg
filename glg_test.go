@@ -1521,8 +1521,11 @@ func TestGlg_Log(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Log(tt.val...)
+			err := g.Log(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Log() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Log() = got %v want %v", buf.String(), want)
 			}
@@ -1559,10 +1562,13 @@ func TestGlg_Logf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Logf(tt.format, tt.val...)
+			err := g.Logf(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Logf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
-				t.Errorf("Glg.Log() = got %v want %v", buf.String(), want)
+				t.Errorf("Glg.Logf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
@@ -1596,7 +1602,10 @@ func TestGlg_LogFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(tt.logMode).SetWriter(buf)
-			g.LogFunc(tt.f)
+			err := g.LogFunc(tt.f)
+			if err != nil {
+				t.Errorf("Glg.LogFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("Glg.LogFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -1620,8 +1629,11 @@ func TestLog(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Log(tt.val...)
+			err := Log(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Log() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Log() = got %v want %v", buf.String(), want)
 			}
@@ -1658,8 +1670,11 @@ func TestLogf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Logf(tt.format, tt.val...)
+			err := Logf(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Logf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Logf() = got %v want %v", buf.String(), want)
 			}
@@ -1695,7 +1710,10 @@ func TestLogFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(tt.logMode).SetWriter(buf)
-			LogFunc(tt.f)
+			err := LogFunc(tt.f)
+			if err != nil {
+				t.Errorf("LogFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("LogFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -1719,8 +1737,11 @@ func TestGlg_Info(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Info(tt.val...)
+			err := g.Info(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Info() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Info() = got %v want %v", buf.String(), want)
 			}
@@ -1757,8 +1778,11 @@ func TestGlg_Infof(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Infof(tt.format, tt.val...)
+			err := g.Infof(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Infof() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Infof() = got %v want %v", buf.String(), want)
 			}
@@ -1794,7 +1818,10 @@ func TestGlg_InfoFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(tt.logMode).SetWriter(buf)
-			g.InfoFunc(tt.f)
+			err := g.InfoFunc(tt.f)
+			if err != nil {
+				t.Errorf("Glg.InfoFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("Glg.InfoFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -1817,8 +1844,11 @@ func TestInfo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Info(tt.val...)
+			err := Info(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Info() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Info() = got %v want %v", buf.String(), want)
 			}
@@ -1855,8 +1885,11 @@ func TestInfof(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Infof(tt.format, tt.val...)
+			err := Infof(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Infof() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Infof() = got %v want %v", buf.String(), want)
 			}
@@ -1892,7 +1925,10 @@ func TestInfoFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(tt.logMode).SetWriter(buf)
-			InfoFunc(tt.f)
+			err := InfoFunc(tt.f)
+			if err != nil {
+				t.Errorf("InfoFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("InfoFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -1916,8 +1952,11 @@ func TestGlg_Success(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Success(tt.val...)
+			err := g.Success(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Success() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Success() = got %v want %v", buf.String(), want)
 			}
@@ -1954,8 +1993,11 @@ func TestGlg_Successf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Successf(tt.format, tt.val...)
+			err := g.Successf(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Successf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Successf() = got %v want %v", buf.String(), want)
 			}
@@ -1991,7 +2033,10 @@ func TestGlg_SuccessFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(tt.logMode).SetWriter(buf)
-			g.SuccessFunc(tt.f)
+			err := g.SuccessFunc(tt.f)
+			if err != nil {
+				t.Errorf("Glg.SuccessFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("Glg.SuccessFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -2014,8 +2059,11 @@ func TestSuccess(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Success(tt.val...)
+			err := Success(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Success() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Success() = got %v want %v", buf.String(), want)
 			}
@@ -2053,8 +2101,11 @@ func TestSuccessf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Successf(tt.format, tt.val...)
+			err := Successf(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Successf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Successf() = got %v want %v", buf.String(), want)
 			}
@@ -2090,9 +2141,12 @@ func TestSuccessFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(tt.logMode).SetWriter(buf)
-			SuccessFunc(tt.f)
+			err := SuccessFunc(tt.f)
+			if err != nil {
+				t.Errorf("SuccessFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
-				t.Errorf("Glg.SuccessFunc() = got %v want %v", buf.String(), tt.want)
+				t.Errorf("SuccessFunc() = got %v want %v", buf.String(), tt.want)
 			}
 		})
 	}
@@ -2113,8 +2167,11 @@ func TestGlg_Debug(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Debug(tt.val...)
+			err := g.Debug(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Debug() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Debug() = got %v want %v", buf.String(), want)
 			}
@@ -2151,8 +2208,11 @@ func TestGlg_Debugf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Debugf(tt.format, tt.val...)
+			err := g.Debugf(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Debugf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Debugf() = got %v want %v", buf.String(), want)
 			}
@@ -2188,7 +2248,10 @@ func TestGlg_DebugFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(tt.logMode).SetWriter(buf)
-			g.DebugFunc(tt.f)
+			err := g.DebugFunc(tt.f)
+			if err != nil {
+				t.Errorf("Glg.DebugFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("Glg.DebugFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -2212,8 +2275,11 @@ func TestDebug(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Debug(tt.val...)
+			err := Debug(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Debug() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Debug() = got %v want %v", buf.String(), want)
 			}
@@ -2250,8 +2316,11 @@ func TestDebugf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Debugf(tt.format, tt.val...)
+			err := Debugf(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Debugf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Debugf() = got %v want %v", buf.String(), want)
 			}
@@ -2287,9 +2356,12 @@ func TestDebugFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(tt.logMode).SetWriter(buf)
-			DebugFunc(tt.f)
+			err := DebugFunc(tt.f)
+			if err != nil {
+				t.Errorf("DebugFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
-				t.Errorf("Glg.LogFunc() = got %v want %v", buf.String(), tt.want)
+				t.Errorf("DebugFunc() = got %v want %v", buf.String(), tt.want)
 			}
 		})
 	}
@@ -2311,8 +2383,11 @@ func TestGlg_Warn(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Warn(tt.val...)
+			err := g.Warn(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Warn() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Warn() = got %v want %v", buf.String(), want)
 			}
@@ -2349,8 +2424,11 @@ func TestGlg_Warnf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Warnf(tt.format, tt.val...)
+			err := g.Warnf(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Warnf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Warnf() = got %v want %v", buf.String(), want)
 			}
@@ -2386,7 +2464,10 @@ func TestGlg_WarnFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(tt.logMode).SetWriter(buf)
-			g.WarnFunc(tt.f)
+			err := g.WarnFunc(tt.f)
+			if err != nil {
+				t.Errorf("Glg.WarnFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("Glg.WarnFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -2409,8 +2490,11 @@ func TestWarn(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Warn(tt.val...)
+			err := Warn(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Warn() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Warn() = got %v want %v", buf.String(), want)
 			}
@@ -2447,8 +2531,11 @@ func TestWarnf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Warnf(tt.format, tt.val...)
+			err := Warnf(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Warnf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Warnf() = got %v want %v", buf.String(), want)
 			}
@@ -2484,7 +2571,10 @@ func TestWarnFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(tt.logMode).SetWriter(buf)
-			WarnFunc(tt.f)
+			err := WarnFunc(tt.f)
+			if err != nil {
+				t.Errorf("WarnFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("WarnFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -2511,8 +2601,11 @@ func TestGlg_CustomLog(t *testing.T) {
 			g := New()
 			g.SetMode(WRITER).AddStdLevel(tt.level, WRITER, false)
 			g.SetWriter(buf)
-			g.CustomLog(tt.level, tt.val...)
+			err := g.CustomLog(tt.level, tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Glg.CustomLog() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.CustomLog() = got %v want %v", buf.String(), want)
 			}
@@ -2554,8 +2647,11 @@ func TestGlg_CustomLogf(t *testing.T) {
 			g := New()
 			g.SetMode(WRITER).AddStdLevel(tt.level, WRITER, false)
 			g.SetWriter(buf)
-			g.CustomLogf(tt.level, tt.format, tt.val...)
+			err := g.CustomLogf(tt.level, tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Glg.CustomLogf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.CustomLogf() = got %v want %v", buf.String(), want)
 			}
@@ -2596,7 +2692,10 @@ func TestGlg_CustomLogFunc(t *testing.T) {
 			g := New()
 			g.SetMode(tt.logMode).AddStdLevel(tt.level, tt.logMode, false)
 			g.SetWriter(buf)
-			g.CustomLogFunc(tt.level, tt.f)
+			err := g.CustomLogFunc(tt.level, tt.f)
+			if err != nil {
+				t.Errorf("Glg.CustomLogFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("Glg.CustomLogFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -2623,8 +2722,11 @@ func TestCustomLog(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).AddStdLevel(tt.level, WRITER, false)
 			Get().SetWriter(buf)
-			CustomLog(tt.level, tt.val...)
+			err := CustomLog(tt.level, tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("CustomLog() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("CustomLog() = got %v want %v", buf.String(), want)
 			}
@@ -2665,10 +2767,13 @@ func TestCustomLogf(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).AddStdLevel(tt.level, WRITER, false)
 			Get().SetWriter(buf)
-			CustomLogf(tt.level, tt.format, tt.val...)
+			err := CustomLogf(tt.level, tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("CustomLogf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
-				t.Errorf("Glg.Warnf() = got %v want %v", buf.String(), want)
+				t.Errorf("CustomLogf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
@@ -2706,7 +2811,10 @@ func TestCustomLogFunc(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(tt.logMode).AddStdLevel(tt.level, tt.logMode, false)
 			Get().SetWriter(buf)
-			CustomLogFunc(tt.level, tt.f)
+			err := CustomLogFunc(tt.level, tt.f)
+			if err != nil {
+				t.Errorf("CustomLogFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("CustomLogFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -2729,8 +2837,11 @@ func TestGlg_Print(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Print(tt.val...)
+			err := g.Print(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Print() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Print() = got %v want %v", buf.String(), want)
 			}
@@ -2754,8 +2865,11 @@ func TestGlg_Println(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Println(tt.val...)
+			err := g.Println(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Println() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Println() = got %v want %v", buf.String(), want)
 			}
@@ -2792,8 +2906,11 @@ func TestGlg_Printf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Printf(tt.format, tt.val...)
+			err := g.Printf(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Printf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Printf() = got %v want %v", buf.String(), want)
 			}
@@ -2829,7 +2946,10 @@ func TestGlg_PrintFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(tt.logMode).SetWriter(buf)
-			g.PrintFunc(tt.f)
+			err := g.PrintFunc(tt.f)
+			if err != nil {
+				t.Errorf("Glg.PrintFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("Glg.PrintFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -2853,8 +2973,11 @@ func TestPrint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Print(tt.val...)
+			err := Print(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Print() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Print() = got %v want %v", buf.String(), want)
 			}
@@ -2878,8 +3001,11 @@ func TestPrintln(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Println(tt.val...)
+			err := Println(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Println() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Println() = got %v want %v", buf.String(), want)
 			}
@@ -2916,8 +3042,11 @@ func TestPrintf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Printf(tt.format, tt.val...)
+			err := Printf(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Printf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Printf() = got %v want %v", buf.String(), want)
 			}
@@ -2953,7 +3082,10 @@ func TestPrintFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(tt.logMode).SetWriter(buf)
-			PrintFunc(tt.f)
+			err := PrintFunc(tt.f)
+			if err != nil {
+				t.Errorf("PrintFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("PrintFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -2977,8 +3109,11 @@ func TestGlg_Error(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Error(tt.val...)
+			err := g.Error(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Error() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Error() = got %v want %v", buf.String(), want)
 			}
@@ -3015,8 +3150,11 @@ func TestGlg_Errorf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Errorf(tt.format, tt.val...)
+			err := g.Errorf(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Errorf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Errorf() = got %v want %v", buf.String(), want)
 			}
@@ -3052,7 +3190,10 @@ func TestGlg_ErrorFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(tt.logMode).SetWriter(buf)
-			g.ErrorFunc(tt.f)
+			err := g.ErrorFunc(tt.f)
+			if err != nil {
+				t.Errorf("Glg.ErrorFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("Glg.ErrorFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -3076,10 +3217,13 @@ func TestError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Error(tt.val...)
+			err := Error(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Error() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
-				t.Errorf("Glg.Error() = got %v want %v", buf.String(), want)
+				t.Errorf("Error() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
@@ -3114,8 +3258,11 @@ func TestErrorf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Errorf(tt.format, tt.val...)
+			err := Errorf(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Errorf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Errorf() = got %v want %v", buf.String(), want)
 			}
@@ -3151,7 +3298,10 @@ func TestErrorFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(tt.logMode).SetWriter(buf)
-			ErrorFunc(tt.f)
+			err := ErrorFunc(tt.f)
+			if err != nil {
+				t.Errorf("ErrorFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("ErrorFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -3174,8 +3324,11 @@ func TestGlg_Fail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Fail(tt.val...)
+			err := g.Fail(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Fail() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Fail() = got %v want %v", buf.String(), want)
 			}
@@ -3212,8 +3365,11 @@ func TestGlg_Failf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(WRITER).SetWriter(buf)
-			g.Failf(tt.format, tt.val...)
+			err := g.Failf(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Failf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Glg.Failf() = got %v want %v", buf.String(), want)
 			}
@@ -3249,7 +3405,10 @@ func TestGlg_FailFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := New().SetMode(tt.logMode).SetWriter(buf)
-			g.FailFunc(tt.f)
+			err := g.FailFunc(tt.f)
+			if err != nil {
+				t.Errorf("Glg.FailFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("Glg.FailFunc() = got %v want %v", buf.String(), tt.want)
 			}
@@ -3272,8 +3431,11 @@ func TestFail(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Fail(tt.val...)
+			err := Fail(tt.val...)
 			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Fail() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
 				t.Errorf("Fail() = got %v want %v", buf.String(), want)
 			}
@@ -3310,10 +3472,13 @@ func TestFailf(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(WRITER).SetWriter(buf)
-			Failf(tt.format, tt.val...)
+			err := Failf(tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Failf() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), want) {
-				t.Errorf("Glg.Failf() = got %v want %v", buf.String(), want)
+				t.Errorf("Failf() = got %v want %v", buf.String(), want)
 			}
 		})
 	}
@@ -3347,7 +3512,10 @@ func TestFailFunc(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			Get().SetMode(tt.logMode).SetWriter(buf)
-			FailFunc(tt.f)
+			err := FailFunc(tt.f)
+			if err != nil {
+				t.Errorf("FailFunc() unexpected error: %v", err)
+			}
 			if !strings.Contains(buf.String(), tt.want) {
 				t.Errorf("FailFunc() = got %v want %v", buf.String(), tt.want)
 			}
