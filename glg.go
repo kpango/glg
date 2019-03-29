@@ -670,24 +670,24 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 	b.WriteString(sep)
 	b.WriteString(format)
 
-	switch log.writeMode {
-	case writeColorStd:
+	switch {
+	case log.writeMode^writeColorStd == 0:
 		buf = b.Bytes()
 		_, err = fmt.Fprintf(log.std, log.color(*(*string)(unsafe.Pointer(&buf)))+rc, val...)
-	case writeStd:
+	case log.writeMode^writeStd == 0:
 		b.WriteString(rc)
 		buf = b.Bytes()
 		_, err = fmt.Fprintf(log.std, *(*string)(unsafe.Pointer(&buf)), val...)
-	case writeWriter:
+	case log.writeMode^writeWriter == 0:
 		b.WriteString(rc)
 		buf = b.Bytes()
 		_, err = fmt.Fprintf(log.writer, *(*string)(unsafe.Pointer(&buf)), val...)
-	case writeColorBoth:
+	case log.writeMode^writeColorBoth == 0:
 		buf = b.Bytes()
 		var str = *(*string)(unsafe.Pointer(&buf))
 		_, err = fmt.Fprintf(log.std, log.color(str)+rc, val...)
 		_, err = fmt.Fprintf(log.writer, str+rc, val...)
-	case writeBoth:
+	case log.writeMode^writeBoth == 0:
 		b.WriteString(rc)
 		buf = b.Bytes()
 		_, err = fmt.Fprintf(io.MultiWriter(log.std, log.writer), *(*string)(unsafe.Pointer(&buf)), val...)
