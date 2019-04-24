@@ -184,7 +184,7 @@ func New() *Glg {
 				return bytes.NewBuffer(make([]byte, 0, bufferSize))
 			},
 		},
-		ft: fastime.New().SetFormat(timeFormat).StartTimerD(context.Background(), time.Millisecond),
+		ft: fastime.New().SetFormat(timeFormat).StartTimerD(context.Background(), 100*time.Millisecond),
 	}
 
 	atomic.StoreUint32(g.levelCounter, uint32(FATAL))
