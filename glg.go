@@ -25,7 +25,6 @@ package glg
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -34,7 +33,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 	"unsafe"
 
 	"github.com/kpango/fastime"
@@ -46,7 +44,6 @@ type Glg struct {
 	levelCounter *uint32
 	levelMap     sync.Map
 	buffer       sync.Pool
-	ft           *fastime.Fastime
 }
 
 // MODE is logging mode (std only, writer only, std & writer)
@@ -184,63 +181,62 @@ func New() *Glg {
 				return bytes.NewBuffer(make([]byte, 0, bufferSize))
 			},
 		},
-		ft: fastime.New().SetFormat(timeFormat).StartTimerD(context.Background(), 100*time.Millisecond),
 	}
 
 	atomic.StoreUint32(g.levelCounter, uint32(FATAL))
 
 	for lev, log := range map[LEVEL]*logger{
 		// standard out
-		PRINT: &logger{
+		PRINT: {
 			std:     os.Stdout,
 			color:   Colorless,
 			isColor: true,
 			mode:    STD,
 		},
-		LOG: &logger{
+		LOG: {
 			std:     os.Stdout,
 			color:   Colorless,
 			isColor: true,
 			mode:    STD,
 		},
-		INFO: &logger{
+		INFO: {
 			std:     os.Stdout,
 			color:   Green,
 			isColor: true,
 			mode:    STD,
 		},
-		DEBG: &logger{
+		DEBG: {
 			std:     os.Stdout,
 			color:   Purple,
 			isColor: true,
 			mode:    STD,
 		},
-		OK: &logger{
+		OK: {
 			std:     os.Stdout,
 			color:   Cyan,
 			isColor: true,
 			mode:    STD,
 		},
-		WARN: &logger{
+		WARN: {
 			std:     os.Stdout,
 			color:   Orange,
 			isColor: true,
 			mode:    STD,
 		},
 		// error out
-		ERR: &logger{
+		ERR: {
 			std:     os.Stderr,
 			color:   Red,
 			isColor: true,
 			mode:    STD,
 		},
-		FAIL: &logger{
+		FAIL: {
 			std:     os.Stderr,
 			color:   Red,
 			isColor: true,
 			mode:    STD,
 		},
-		FATAL: &logger{
+		FATAL: {
 			std:     os.Stderr,
 			color:   Red,
 			isColor: true,
@@ -258,6 +254,7 @@ func New() *Glg {
 // Get returns singleton glg instance
 func Get() *Glg {
 	once.Do(func() {
+		fastime.SetFormat(timeFormat)
 		glg = New()
 	})
 	return glg
@@ -570,12 +567,12 @@ func (g *Glg) HTTPLogger(name string, handler http.Handler) http.Handler {
 // HTTPLoggerFunc is simple http access logger
 func (g *Glg) HTTPLoggerFunc(name string, hf http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := g.ft.Now()
+		start := fastime.Now()
 
 		hf(w, r)
 
 		err := g.Logf("Method: %s\tURI: %s\tName: %s\tTime: %s",
-			r.Method, r.RequestURI, name, g.ft.Now().Sub(start).String())
+			r.Method, r.RequestURI, name, fastime.Now().Sub(start).String())
 
 		if err != nil {
 			err = g.Error(err)
@@ -664,7 +661,7 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		log = l.(*logger)
 	)
 
-	b.Write(g.ft.FormattedNow())
+	b.Write(fastime.FormattedNow())
 	b.WriteString("\t[")
 	b.WriteString(log.tag)
 	b.WriteString(sep)
@@ -686,7 +683,9 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		buf = b.Bytes()
 		var str = *(*string)(unsafe.Pointer(&buf))
 		_, err = fmt.Fprintf(log.std, log.color(str)+rc, val...)
-		_, err = fmt.Fprintf(log.writer, str+rc, val...)
+		if err == nil {
+			_, err = fmt.Fprintf(log.writer, str+rc, val...)
+		}
 	case log.writeMode^writeBoth == 0:
 		b.WriteString(rc)
 		buf = b.Bytes()
@@ -1085,7 +1084,9 @@ func Fatalln(val ...interface{}) {
 	glg.Fatalln(val...)
 }
 
-// ReplaceExitFunc replaces exit function. If you do not want to start os.Exit at glg.Fatal error, use this function to register arbitrary function
+// ReplaceExitFunc replaces exit function.
+// If you do not want to start os.Exit at glg.Fatal error,
+// use this function to register arbitrary function
 func ReplaceExitFunc(fn func(i int)) {
 	exit = fn
 }
