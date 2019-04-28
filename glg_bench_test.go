@@ -60,7 +60,6 @@ SOFTWARE.`
 )
 
 type MockWriter struct {
-	msg string
 }
 
 func (m MockWriter) Write(b []byte) (int, error) {
