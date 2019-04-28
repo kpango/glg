@@ -102,7 +102,9 @@ const (
 	none
 
 	// Default Format
-	df  = "%v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v "
+	df = "%v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v " +
+		"%v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v "
+
 	dfl = len(df) / 3
 
 	timeFormat = "2006-01-02 15:04:05"
