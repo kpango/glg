@@ -289,17 +289,17 @@ func (g *Glg) SetLevelMode(level LEVEL, mode MODE) *Glg {
 }
 
 // SetPrefix set Print logger prefix
-func SetPrefix(pref string) *Glg {
-	return glg.SetPrefix(pref)
+func SetPrefix(pref string, lev LEVEL) *Glg {
+	return glg.SetPrefix(pref, lev)
 }
 
 // SetPrefix set Print logger prefix
-func (g *Glg) SetPrefix(pref string) *Glg {
-	v, ok := g.logger.Load(PRINT)
+func (g *Glg) SetPrefix(pref string, lev LEVEL) *Glg {
+	v, ok := g.logger.Load(lev)
 	if ok {
 		value := v.(*logger)
 		value.tag = pref
-		g.logger.Store(PRINT, value)
+		g.logger.Store(lev, value)
 	}
 	return g
 }
