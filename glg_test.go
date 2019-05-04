@@ -38,6 +38,10 @@ import (
 
 type ExitError int
 
+const (
+	dummy = "dummy"
+)
+
 func (e ExitError) Error() string {
 	return fmt.Sprintf("exited with code %d", int(e))
 }
@@ -681,7 +685,7 @@ func TestSetPrefix(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			SetPrefix(tt.prefix)
+			SetPrefix(tt.prefix, PRINT)
 			buf := new(bytes.Buffer)
 			Get().SetWriter(buf)
 			Get().SetMode(WRITER)
@@ -709,7 +713,7 @@ func TestGlg_SetPrefix(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.glg.SetPrefix(tt.prefix)
+			tt.glg.SetPrefix(tt.prefix, PRINT)
 			buf := new(bytes.Buffer)
 			tt.glg.SetWriter(buf)
 			tt.glg.SetMode(WRITER)
@@ -1607,15 +1611,15 @@ func TestGlg_LogFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -1715,15 +1719,15 @@ func TestLogFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -1823,15 +1827,15 @@ func TestGlg_InfoFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -1930,15 +1934,15 @@ func TestInfoFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -2038,15 +2042,15 @@ func TestGlg_SuccessFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -2146,15 +2150,15 @@ func TestSuccessFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -2253,15 +2257,15 @@ func TestGlg_DebugFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -2361,15 +2365,15 @@ func TestDebugFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -2469,15 +2473,15 @@ func TestGlg_WarnFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -2576,15 +2580,15 @@ func TestWarnFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -2694,16 +2698,16 @@ func TestGlg_CustomLogFunc(t *testing.T) {
 			logMode: WRITER,
 			level:   "custom",
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			level:   "custom",
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -2814,16 +2818,16 @@ func TestCustomLogFunc(t *testing.T) {
 			logMode: WRITER,
 			level:   "custom",
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			level:   "custom",
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -2951,15 +2955,15 @@ func TestGlg_PrintFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -3087,15 +3091,15 @@ func TestPrintFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -3195,15 +3199,15 @@ func TestGlg_ErrorFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -3303,15 +3307,15 @@ func TestErrorFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -3410,15 +3414,15 @@ func TestGlg_FailFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
@@ -3517,15 +3521,15 @@ func TestFailFunc(t *testing.T) {
 			name:    "sample log",
 			logMode: WRITER,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
-			want: "dummy",
+			want: dummy,
 		},
 		{
 			name:    "sample log",
 			logMode: NONE,
 			f: func() string {
-				return "dummy"
+				return dummy
 			},
 			want: "",
 		},
