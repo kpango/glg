@@ -685,7 +685,7 @@ func TestSetPrefix(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			SetPrefix(tt.prefix, PRINT)
+			SetPrefix(PRINT, tt.prefix)
 			buf := new(bytes.Buffer)
 			Get().SetWriter(buf)
 			Get().SetMode(WRITER)
@@ -713,7 +713,7 @@ func TestGlg_SetPrefix(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.glg.SetPrefix(tt.prefix, PRINT)
+			tt.glg.SetPrefix(PRINT, tt.prefix)
 			buf := new(bytes.Buffer)
 			tt.glg.SetWriter(buf)
 			tt.glg.SetMode(WRITER)
