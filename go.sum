@@ -2,3 +2,5 @@ github.com/kpango/fastime v1.0.10 h1:tRo/DXM4TR0gy7R+TlQ8RNuIcIMJPQ0KzSY1HHbZSCQ
 github.com/kpango/fastime v1.0.10/go.mod h1:lVqUTcXmQnk1wriyvq5DElbRSRDC0XtqbXQRdz0Eo+g=
 github.com/kpango/fastime v1.0.11 h1:8NBhHPhwKSgN+j2HK2vhlbXpoekOXaPrzY6IQlD4Sq0=
 github.com/kpango/fastime v1.0.11/go.mod h1:lVqUTcXmQnk1wriyvq5DElbRSRDC0XtqbXQRdz0Eo+g=
+github.com/kpango/fastime v1.0.12 h1:aeJ0PETCDrmUR0Xxv5IGQxSxYIwNihuez6r5aK1wSqo=
+github.com/kpango/fastime v1.0.12/go.mod h1:lVqUTcXmQnk1wriyvq5DElbRSRDC0XtqbXQRdz0Eo+g=
