@@ -33,6 +33,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 	"unsafe"
 
 	"github.com/kpango/fastime"
@@ -103,6 +104,8 @@ const (
 
 	// Default Format
 	df = "%v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v " +
+		"%v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v " +
+		"%v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v " +
 		"%v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v "
 
 	dfl = len(df) / 3
@@ -569,12 +572,14 @@ func (g *Glg) HTTPLogger(name string, handler http.Handler) http.Handler {
 // HTTPLoggerFunc is simple http access logger
 func (g *Glg) HTTPLoggerFunc(name string, hf http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := fastime.Now()
+		start := fastime.UnixNanoNow()
 
 		hf(w, r)
 
+		start -= fastime.UnixNanoNow()
+
 		err := g.Logf("Method: %s\tURI: %s\tName: %s\tTime: %s",
-			r.Method, r.RequestURI, name, fastime.Now().Sub(start).String())
+			r.Method, r.RequestURI, name, (*(*time.Duration)(unsafe.Pointer(&start))).String())
 
 		if err != nil {
 			err = g.Error(err)
