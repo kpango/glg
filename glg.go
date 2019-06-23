@@ -278,7 +278,7 @@ func (g *Glg) SetMode(mode MODE) *Glg {
 	return g
 }
 
-// SetLevelMode set glg logging mode* per level
+// SetLevelMode sets glg logging mode* per level
 func (g *Glg) SetLevelMode(level LEVEL, mode MODE) *Glg {
 	lev, ok := g.logger.Load(level)
 	if ok {
@@ -291,12 +291,12 @@ func (g *Glg) SetLevelMode(level LEVEL, mode MODE) *Glg {
 	return g
 }
 
-// SetPrefix set Print logger prefix
+// SetPrefix sets Print logger prefix
 func SetPrefix(lev LEVEL, pref string) *Glg {
 	return glg.SetPrefix(lev, pref)
 }
 
-// SetPrefix set Print logger prefix
+// SetPrefix sets Print logger prefix
 func (g *Glg) SetPrefix(lev LEVEL, pref string) *Glg {
 	v, ok := g.logger.Load(lev)
 	if ok {
@@ -600,7 +600,7 @@ func HTTPLoggerFunc(name string, hf http.HandlerFunc) http.Handler {
 	return glg.HTTPLoggerFunc(name, hf)
 }
 
-// Colorless return colorless string
+// Colorless returns colorless string
 func Colorless(str string) string {
 	return str
 }
