@@ -1,7 +1,13 @@
 package main
 
 import (
+	"bytes"
+	"context"
+	"errors"
+	"io"
 	"net/http"
+	"os"
+	"sync"
 	"time"
 
 	"github.com/kpango/glg"
@@ -18,6 +24,58 @@ func (n NetWorkLogger) Write(b []byte) (int, error) {
 	return 1, nil
 }
 
+type RotateWriter struct {
+	writer io.Writer
+	dur    time.Duration
+	once   sync.Once
+	cancel context.CancelFunc
+	mu     sync.Mutex
+	buf    *bytes.Buffer
+}
+
+func NewRotateWriter(w io.Writer, dur time.Duration, buf *bytes.Buffer) *RotateWriter {
+	return &RotateWriter{
+		writer: w,
+		dur:    dur,
+		buf:    buf,
+	}
+}
+
+func (r *RotateWriter) Write(b []byte) (int, error) {
+	if r.buf == nil || r.writer == nil {
+		return 0, errors.New("error invalid rotate config")
+	}
+	r.once.Do(func() {
+		var ctx context.Context
+		ctx, r.cancel = context.WithCancel(context.Background())
+		go func() {
+			tick := time.NewTicker(r.dur)
+			for {
+				select {
+				case <-ctx.Done():
+					tick.Stop()
+					return
+				case <-tick.C:
+					r.mu.Lock()
+					r.writer.Write(r.buf.Bytes())
+					r.buf.Reset()
+					r.mu.Unlock()
+				}
+			}
+		}()
+	})
+	r.mu.Lock()
+	r.buf.Write(b)
+	r.mu.Unlock()
+	return len(b), nil
+}
+
+func (r *RotateWriter) Close() {
+	if r.cancel != nil {
+		r.cancel()
+	}
+}
+
 func main() {
 
 	// var errWriter io.Writer
@@ -28,8 +86,12 @@ func main() {
 	customErrTag := "CRIT"
 
 	errlog := glg.FileWriter("/tmp/error.log", 0666)
+	rotate := NewRotateWriter(os.Stdout, time.Second*10, bytes.NewBuffer(make([]byte, 0, 4096)))
+
 	defer infolog.Close()
 	defer errlog.Close()
+	defer rotate.Close()
+
 	glg.Get().
 		SetMode(glg.BOTH). // default is STD
 		// DisableColor().
@@ -49,6 +111,7 @@ func main() {
 		// SetLevelWriter(glg.ERR, customWriter).
 		AddLevelWriter(glg.INFO, infolog).                         // add info log file destination
 		AddLevelWriter(glg.ERR, errlog).                           // add error log file destination
+		AddLevelWriter(glg.WARN, rotate).                          // add error log file destination
 		AddStdLevel(customTag, glg.STD, false).                    //user custom log level
 		AddErrLevel(customErrTag, glg.STD, true).                  // user custom error log level
 		SetLevelColor(glg.TagStringToLevel(customTag), glg.Cyan).  // set color output to user custom level
