@@ -41,6 +41,7 @@ import (
 
 // Glg is glg base struct
 type Glg struct {
+	bufferSize   atomic.Value
 	logger       sync.Map // map[uint8]*logger
 	levelCounter *uint32
 	levelMap     sync.Map
@@ -181,10 +182,13 @@ func New() *Glg {
 
 	g := &Glg{
 		levelCounter: new(uint32),
-		buffer: sync.Pool{
-			New: func() interface{} {
-				return bytes.NewBuffer(make([]byte, 0, bufferSize))
-			},
+	}
+
+	g.bufferSize.Store(bufferSize)
+
+	g.buffer = sync.Pool{
+		New: func() interface{} {
+			return bytes.NewBuffer(make([]byte, 0, g.bufferSize.Load().(int)))
 		},
 	}
 
@@ -314,6 +318,13 @@ func (g *Glg) GetCurrentMode(level LEVEL) MODE {
 		return l.(*logger).mode
 	}
 	return NONE
+}
+
+func (g *Glg) SetLogBufferSize(size int) *Glg {
+	if size > (len(timeFormat) + len("[") + len(sep)) {
+		g.bufferSize.Store(size)
+	}
+	return g
 }
 
 // InitWriter is initialize glg writer
