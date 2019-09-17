@@ -31,14 +31,10 @@ profile: clean init
 	go test -count=10 -run=NONE -bench=BenchmarkGlg -benchmem -o pprof/glg-test.bin -cpuprofile pprof/cpu-glg.out -memprofile pprof/mem-glg.out
 	go tool pprof --svg pprof/glg-test.bin pprof/cpu-glg.out > cpu-glg.svg
 	go tool pprof --svg pprof/glg-test.bin pprof/mem-glg.out > mem-glg.svg
-	go-torch -f bench/cpu-glg-graph.svg pprof/glg-test.bin pprof/cpu-glg.out
-	go-torch --alloc_objects -f bench/mem-glg-graph.svg pprof/glg-test.bin pprof/mem-glg.out
 	\
 	go test -count=10 -run=NONE -bench=BenchmarkDefaultLog -benchmem -o pprof/default-test.bin -cpuprofile pprof/cpu-default.out -memprofile pprof/mem-default.out
 	go tool pprof --svg pprof/default-test.bin pprof/mem-default.out > mem-default.svg
 	go tool pprof --svg pprof/default-test.bin pprof/cpu-default.out > cpu-default.svg
-	go-torch -f bench/cpu-default-graph.svg pprof/default-test.bin pprof/cpu-default.out
-	go-torch --alloc_objects -f bench/mem-default-graph.svg pprof/default-test.bin pprof/mem-default.out
 	\
 	mv ./*.svg bench/
 
