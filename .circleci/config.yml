@@ -2,7 +2,7 @@ alias:
   default: &default
     working_directory: /go/src/github.com/kpango/glg
     docker:
-      - image: circleci/golang:1.13.0
+      - image: circleci/golang:1.13
         environment:
           GOPATH: "/go"
           GO111MODULE: "on"
@@ -11,7 +11,7 @@ alias:
           GITHUB_API: "https://api.github.com/"
           DOCKER_USER: "kpango"
   setup_remote_docker: &setup_remote_docker
-    version: 18.06.0-ce
+    version: 19.03.4
     docker_layer_caching: true
 
 version: 2

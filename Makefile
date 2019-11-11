@@ -38,6 +38,14 @@ profile: clean init
 	\
 	mv ./*.svg bench/
 
+profile-web:
+	go tool pprof -http=":6061" \
+		pprof/glg-test.bin \
+		pprof/cpu-glg.out &
+	go tool pprof -http=":6062" \
+		pprof/glg-test.bin \
+		pprof/mem-glg.out
+
 cpu:
 	go tool pprof pprof/glg-test.bin pprof/cpu-glg.out
 
