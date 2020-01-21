@@ -431,6 +431,7 @@ func (g *Glg) AddLevelWriter(level LEVEL, writer io.Writer) *Glg {
 func (g *Glg) AddStdLevel(tag string, mode MODE, isColor bool) *Glg {
 	atomic.AddUint32(g.levelCounter, 1)
 	lev := LEVEL(atomic.LoadUint32(g.levelCounter))
+	tag = strings.ToUpper(tag)
 	g.levelMap.Store(tag, lev)
 	l := &logger{
 		writer:  nil,
@@ -449,6 +450,7 @@ func (g *Glg) AddStdLevel(tag string, mode MODE, isColor bool) *Glg {
 func (g *Glg) AddErrLevel(tag string, mode MODE, isColor bool) *Glg {
 	atomic.AddUint32(g.levelCounter, 1)
 	lev := LEVEL(atomic.LoadUint32(g.levelCounter))
+	tag = strings.ToUpper(tag)
 	g.levelMap.Store(tag, lev)
 	l := &logger{
 		writer:  nil,
@@ -528,6 +530,7 @@ func RawString(data []byte) string {
 
 // TagStringToLevel converts level string to Glg.LEVEL
 func (g *Glg) TagStringToLevel(tag string) LEVEL {
+	tag = strings.ToUpper(tag)
 	l, ok := g.levelMap.Load(tag)
 	if !ok {
 		return 255
