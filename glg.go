@@ -36,16 +36,24 @@ import (
 	"time"
 	"unsafe"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/kpango/fastime"
 )
 
 // Glg is glg base struct
 type Glg struct {
 	bufferSize   atomic.Value
-	logger       sync.Map // map[uint8]*logger
+	logger       loggers
 	levelCounter *uint32
-	levelMap     sync.Map
+	levelMap     levelMap
 	buffer       sync.Pool
+	enableJSON   bool
+}
+
+type jsonFormat struct {
+	Date   time.Time
+	Level  string
+	Detail interface{}
 }
 
 // MODE is logging mode (std only, writer only, std & writer)
@@ -269,13 +277,33 @@ func Get() *Glg {
 	return glg
 }
 
+func (g *Glg) EnableJSON() *Glg {
+	g.enableJSON = true
+	return g
+}
+
+func (g *Glg) DisableJSON() *Glg {
+	g.enableJSON = false
+	return g
+}
+
+func (g *Glg) EnablePoolBuffer(size int) *Glg {
+	bufs := make([]*bytes.Buffer, 100)
+	for i := range bufs {
+		bufs[i] = g.buffer.Get().(*bytes.Buffer)
+	}
+	for _, buf := range bufs {
+		g.buffer.Put(buf)
+	}
+	return g
+}
+
 // SetMode sets glg logging mode
 func (g *Glg) SetMode(mode MODE) *Glg {
-	g.logger.Range(func(key, val interface{}) bool {
-		l := val.(*logger)
+	g.logger.Range(func(lev LEVEL, l *logger) bool {
 		l.mode = mode
 		l.updateMode()
-		g.logger.Store(key.(LEVEL), l)
+		g.logger.Store(lev, l)
 		return true
 	})
 
@@ -284,14 +312,12 @@ func (g *Glg) SetMode(mode MODE) *Glg {
 
 // SetLevelMode sets glg logging mode* per level
 func (g *Glg) SetLevelMode(level LEVEL, mode MODE) *Glg {
-	lev, ok := g.logger.Load(level)
+	l, ok := g.logger.Load(level)
 	if ok {
-		l := lev.(*logger)
 		l.mode = mode
 		l.updateMode()
 		g.logger.Store(level, l)
 	}
-
 	return g
 }
 
@@ -302,11 +328,10 @@ func SetPrefix(lev LEVEL, pref string) *Glg {
 
 // SetPrefix sets Print logger prefix
 func (g *Glg) SetPrefix(lev LEVEL, pref string) *Glg {
-	v, ok := g.logger.Load(lev)
+	l, ok := g.logger.Load(lev)
 	if ok {
-		value := v.(*logger)
-		value.tag = pref
-		g.logger.Store(lev, value)
+		l.tag = pref
+		g.logger.Store(lev, l)
 	}
 	return g
 }
@@ -315,7 +340,7 @@ func (g *Glg) SetPrefix(lev LEVEL, pref string) *Glg {
 func (g *Glg) GetCurrentMode(level LEVEL) MODE {
 	l, ok := g.logger.Load(level)
 	if ok {
-		return l.(*logger).mode
+		return l.mode
 	}
 	return NONE
 }
@@ -329,11 +354,10 @@ func (g *Glg) SetLogBufferSize(size int) *Glg {
 
 // InitWriter is initialize glg writer
 func (g *Glg) InitWriter() *Glg {
-	g.logger.Range(func(key, val interface{}) bool {
-		l := val.(*logger)
+	g.logger.Range(func(lev LEVEL, l *logger) bool {
 		l.writer = nil
 		l.updateMode()
-		g.logger.Store(key.(LEVEL), l)
+		g.logger.Store(lev, l)
 		return true
 	})
 	return g
@@ -345,11 +369,10 @@ func (g *Glg) SetWriter(writer io.Writer) *Glg {
 		return g
 	}
 
-	g.logger.Range(func(key, val interface{}) bool {
-		l := val.(*logger)
+	g.logger.Range(func(lev LEVEL, l *logger) bool {
 		l.writer = writer
 		l.updateMode()
-		g.logger.Store(key.(LEVEL), l)
+		g.logger.Store(lev, l)
 		return true
 	})
 
@@ -362,15 +385,14 @@ func (g *Glg) AddWriter(writer io.Writer) *Glg {
 		return g
 	}
 
-	g.logger.Range(func(key, val interface{}) bool {
-		l := val.(*logger)
+	g.logger.Range(func(lev LEVEL, l *logger) bool {
 		if l.writer == nil {
 			l.writer = writer
 		} else {
 			l.writer = io.MultiWriter(l.writer, writer)
 		}
 		l.updateMode()
-		g.logger.Store(key.(LEVEL), l)
+		g.logger.Store(lev, l)
 		return true
 	})
 
@@ -379,9 +401,8 @@ func (g *Glg) AddWriter(writer io.Writer) *Glg {
 
 // SetLevelColor sets the color for each level
 func (g *Glg) SetLevelColor(level LEVEL, color func(string) string) *Glg {
-	lev, ok := g.logger.Load(level)
+	l, ok := g.logger.Load(level)
 	if ok {
-		l := lev.(*logger)
 		l.color = color
 		g.logger.Store(level, l)
 	}
@@ -395,9 +416,8 @@ func (g *Glg) SetLevelWriter(level LEVEL, writer io.Writer) *Glg {
 		return g
 	}
 
-	lev, ok := g.logger.Load(level)
+	l, ok := g.logger.Load(level)
 	if ok {
-		l := lev.(*logger)
 		l.writer = writer
 		l.updateMode()
 		g.logger.Store(level, l)
@@ -412,9 +432,8 @@ func (g *Glg) AddLevelWriter(level LEVEL, writer io.Writer) *Glg {
 		return g
 	}
 
-	lev, ok := g.logger.Load(level)
+	l, ok := g.logger.Load(level)
 	if ok {
-		l := lev.(*logger)
 		if l.writer != nil {
 			l.writer = io.MultiWriter(l.writer, writer)
 		} else {
@@ -468,11 +487,10 @@ func (g *Glg) AddErrLevel(tag string, mode MODE, isColor bool) *Glg {
 // EnableColor enables color output
 func (g *Glg) EnableColor() *Glg {
 
-	g.logger.Range(func(key, val interface{}) bool {
-		l := val.(*logger)
+	g.logger.Range(func(lev LEVEL, l *logger) bool {
 		l.isColor = true
 		l.updateMode()
-		g.logger.Store(key.(LEVEL), l)
+		g.logger.Store(lev, l)
 		return true
 	})
 
@@ -482,11 +500,10 @@ func (g *Glg) EnableColor() *Glg {
 // DisableColor disables color output
 func (g *Glg) DisableColor() *Glg {
 
-	g.logger.Range(func(key, val interface{}) bool {
-		l := val.(*logger)
+	g.logger.Range(func(lev LEVEL, l *logger) bool {
 		l.isColor = false
 		l.updateMode()
-		g.logger.Store(key.(LEVEL), l)
+		g.logger.Store(lev, l)
 		return true
 	})
 
@@ -495,9 +512,8 @@ func (g *Glg) DisableColor() *Glg {
 
 // EnableLevelColor enables color output
 func (g *Glg) EnableLevelColor(lv LEVEL) *Glg {
-	ins, ok := g.logger.Load(lv)
+	l, ok := g.logger.Load(lv)
 	if ok {
-		l := ins.(*logger)
 		l.isColor = true
 		l.updateMode()
 		g.logger.Store(lv, l)
@@ -507,9 +523,8 @@ func (g *Glg) EnableLevelColor(lv LEVEL) *Glg {
 
 // DisableLevelColor disables color output
 func (g *Glg) DisableLevelColor(lv LEVEL) *Glg {
-	ins, ok := g.logger.Load(lv)
+	l, ok := g.logger.Load(lv)
 	if ok {
-		l := ins.(*logger)
 		l.isColor = false
 		l.updateMode()
 		g.logger.Store(lv, l)
@@ -531,11 +546,11 @@ func RawString(data []byte) string {
 // TagStringToLevel converts level string to Glg.LEVEL
 func (g *Glg) TagStringToLevel(tag string) LEVEL {
 	tag = strings.ToUpper(tag)
-	l, ok := g.levelMap.Load(tag)
+	lv, ok := g.levelMap.Load(tag)
 	if !ok {
 		return 255
 	}
-	return l.(LEVEL)
+	return lv
 }
 
 // TagStringToLevel converts level string to glg.LEVEL
@@ -670,16 +685,40 @@ func White(str string) string {
 }
 
 func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
-	l, ok := g.logger.Load(level)
+	log, ok := g.logger.Load(level)
 	if !ok {
 		return fmt.Errorf("error:\tLog Level %s Not Found", level)
+	}
+
+	if g.enableJSON {
+		var w io.Writer
+		switch log.writeMode {
+		case writeStd, writeColorStd:
+			w = log.std
+		case writeWriter:
+			w = log.writer
+		case writeBoth, writeColorBoth:
+			w = io.MultiWriter(log.std, log.writer)
+		default:
+			return nil
+		}
+		var detail interface{}
+		if format != "" {
+			detail = fmt.Sprintf(format, val...)
+		} else {
+			detail = val
+		}
+		return jsoniter.NewEncoder(w).Encode(jsonFormat{
+			Date:   fastime.Now(),
+			Level:  level.String(),
+			Detail: detail,
+		})
 	}
 
 	var (
 		buf []byte
 		err error
 		b   = g.buffer.Get().(*bytes.Buffer)
-		log = l.(*logger)
 	)
 
 	b.Write(fastime.FormattedNow())
@@ -720,7 +759,7 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 
 // Log writes std log event
 func (g *Glg) Log(val ...interface{}) error {
-	return g.out(LOG, blankFormat(len(val)), val...)
+	return g.out(LOG, g.blankFormat(len(val)), val...)
 }
 
 // Logf writes std log event with format
@@ -738,7 +777,7 @@ func (g *Glg) LogFunc(f func() string) error {
 
 // Log writes std log event
 func Log(val ...interface{}) error {
-	return glg.out(LOG, blankFormat(len(val)), val...)
+	return glg.out(LOG, glg.blankFormat(len(val)), val...)
 }
 
 // Logf writes std log event with format
@@ -756,7 +795,7 @@ func LogFunc(f func() string) error {
 
 // Info outputs Info level log
 func (g *Glg) Info(val ...interface{}) error {
-	return g.out(INFO, blankFormat(len(val)), val...)
+	return g.out(INFO, g.blankFormat(len(val)), val...)
 }
 
 // Infof outputs formatted Info level log
@@ -774,7 +813,7 @@ func (g *Glg) InfoFunc(f func() string) error {
 
 // Info outputs Info level log
 func Info(val ...interface{}) error {
-	return glg.out(INFO, blankFormat(len(val)), val...)
+	return glg.out(INFO, glg.blankFormat(len(val)), val...)
 }
 
 // Infof outputs formatted Info level log
@@ -792,7 +831,7 @@ func InfoFunc(f func() string) error {
 
 // Success outputs Success level log
 func (g *Glg) Success(val ...interface{}) error {
-	return g.out(OK, blankFormat(len(val)), val...)
+	return g.out(OK, g.blankFormat(len(val)), val...)
 }
 
 // Successf outputs formatted Success level log
@@ -810,7 +849,7 @@ func (g *Glg) SuccessFunc(f func() string) error {
 
 // Success outputs Success level log
 func Success(val ...interface{}) error {
-	return glg.out(OK, blankFormat(len(val)), val...)
+	return glg.out(OK, glg.blankFormat(len(val)), val...)
 }
 
 // Successf outputs formatted Success level log
@@ -828,7 +867,7 @@ func SuccessFunc(f func() string) error {
 
 // Debug outputs Debug level log
 func (g *Glg) Debug(val ...interface{}) error {
-	return g.out(DEBG, blankFormat(len(val)), val...)
+	return g.out(DEBG, g.blankFormat(len(val)), val...)
 }
 
 // Debugf outputs formatted Debug level log
@@ -846,7 +885,7 @@ func (g *Glg) DebugFunc(f func() string) error {
 
 // Debug outputs Debug level log
 func Debug(val ...interface{}) error {
-	return glg.out(DEBG, blankFormat(len(val)), val...)
+	return glg.out(DEBG, glg.blankFormat(len(val)), val...)
 }
 
 // Debugf outputs formatted Debug level log
@@ -864,7 +903,7 @@ func DebugFunc(f func() string) error {
 
 // Warn outputs Warn level log
 func (g *Glg) Warn(val ...interface{}) error {
-	return g.out(WARN, blankFormat(len(val)), val...)
+	return g.out(WARN, g.blankFormat(len(val)), val...)
 }
 
 // Warnf outputs formatted Warn level log
@@ -882,7 +921,7 @@ func (g *Glg) WarnFunc(f func() string) error {
 
 // Warn outputs Warn level log
 func Warn(val ...interface{}) error {
-	return glg.out(WARN, blankFormat(len(val)), val...)
+	return glg.out(WARN, glg.blankFormat(len(val)), val...)
 }
 
 // Warnf outputs formatted Warn level log
@@ -900,7 +939,7 @@ func WarnFunc(f func() string) error {
 
 // CustomLog outputs custom level log
 func (g *Glg) CustomLog(level string, val ...interface{}) error {
-	return g.out(g.TagStringToLevel(level), blankFormat(len(val)), val...)
+	return g.out(g.TagStringToLevel(level), g.blankFormat(len(val)), val...)
 }
 
 // CustomLogf outputs formatted custom level log
@@ -919,7 +958,7 @@ func (g *Glg) CustomLogFunc(level string, f func() string) error {
 
 // CustomLog outputs custom level log
 func CustomLog(level string, val ...interface{}) error {
-	return glg.out(glg.TagStringToLevel(level), blankFormat(len(val)), val...)
+	return glg.out(glg.TagStringToLevel(level), glg.blankFormat(len(val)), val...)
 }
 
 // CustomLogf outputs formatted custom level log
@@ -938,12 +977,12 @@ func CustomLogFunc(level string, f func() string) error {
 
 // Print outputs Print log
 func (g *Glg) Print(val ...interface{}) error {
-	return g.out(PRINT, blankFormat(len(val)), val...)
+	return g.out(PRINT, g.blankFormat(len(val)), val...)
 }
 
 // Println outputs fixed line Print log
 func (g *Glg) Println(val ...interface{}) error {
-	return g.out(PRINT, blankFormat(len(val)), val...)
+	return g.out(PRINT, g.blankFormat(len(val)), val...)
 }
 
 // Printf outputs formatted Print log
@@ -961,12 +1000,12 @@ func (g *Glg) PrintFunc(f func() string) error {
 
 // Print outputs Print log
 func Print(val ...interface{}) error {
-	return glg.out(PRINT, blankFormat(len(val)), val...)
+	return glg.out(PRINT, glg.blankFormat(len(val)), val...)
 }
 
 // Println outputs fixed line Print log
 func Println(val ...interface{}) error {
-	return glg.out(PRINT, blankFormat(len(val)), val...)
+	return glg.out(PRINT, glg.blankFormat(len(val)), val...)
 }
 
 // Printf outputs formatted Print log
@@ -984,7 +1023,7 @@ func PrintFunc(f func() string) error {
 
 // Error outputs Error log
 func (g *Glg) Error(val ...interface{}) error {
-	return g.out(ERR, blankFormat(len(val)), val...)
+	return g.out(ERR, g.blankFormat(len(val)), val...)
 }
 
 // Errorf outputs formatted Error log
@@ -1002,7 +1041,7 @@ func (g *Glg) ErrorFunc(f func() string) error {
 
 // Error outputs Error log
 func Error(val ...interface{}) error {
-	return glg.out(ERR, blankFormat(len(val)), val...)
+	return glg.out(ERR, glg.blankFormat(len(val)), val...)
 }
 
 // Errorf outputs formatted Error log
@@ -1020,7 +1059,7 @@ func ErrorFunc(f func() string) error {
 
 // Fail outputs Failed log
 func (g *Glg) Fail(val ...interface{}) error {
-	return g.out(FAIL, blankFormat(len(val)), val...)
+	return g.out(FAIL, g.blankFormat(len(val)), val...)
 }
 
 // Failf outputs formatted Failed log
@@ -1038,7 +1077,7 @@ func (g *Glg) FailFunc(f func() string) error {
 
 // Fail outputs Failed log
 func Fail(val ...interface{}) error {
-	return glg.out(FAIL, blankFormat(len(val)), val...)
+	return glg.out(FAIL, glg.blankFormat(len(val)), val...)
 }
 
 // Failf outputs formatted Failed log
@@ -1056,7 +1095,7 @@ func FailFunc(f func() string) error {
 
 // Fatal outputs Failed log and exit program
 func (g *Glg) Fatal(val ...interface{}) {
-	err := g.out(FATAL, blankFormat(len(val)), val...)
+	err := g.out(FATAL, g.blankFormat(len(val)), val...)
 	if err != nil {
 		err = g.Error(err.Error())
 		if err != nil {
@@ -1068,7 +1107,7 @@ func (g *Glg) Fatal(val ...interface{}) {
 
 // Fatalln outputs line fixed Failed log and exit program
 func (g *Glg) Fatalln(val ...interface{}) {
-	err := g.out(FATAL, blankFormat(len(val)), val...)
+	err := g.out(FATAL, g.blankFormat(len(val)), val...)
 	if err != nil {
 		err = g.Error(err.Error())
 		if err != nil {
@@ -1118,7 +1157,10 @@ func (g *Glg) Reset() *Glg {
 	return g
 }
 
-func blankFormat(l int) string {
+func (g *Glg) blankFormat(l int) string {
+	if g.enableJSON {
+		return ""
+	}
 	if dfl > l {
 		return df[:l*3-1]
 	}

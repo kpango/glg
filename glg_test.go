@@ -85,18 +85,10 @@ func TestNew(t *testing.T) {
 			t.Errorf("glg mode = %v, want %v", ins1.GetCurrentMode(LOG), ins2.GetCurrentMode(LOG))
 		}
 
-		ins1.logger.Range(func(key, val interface{}) bool {
-			lev1, ok := val.(*logger)
-			if !ok {
-				t.Errorf("invalid glg instance 1 type:\t%v", val)
-			}
-			i2, ok := ins2.logger.Load(key.(LEVEL))
+		ins1.logger.Range(func(lev LEVEL, lev1 *logger) bool {
+			lev2, ok := ins2.logger.Load(lev)
 			if !ok {
 				t.Error("glg instance 2 not found")
-			}
-			lev2, ok := i2.(*logger)
-			if !ok {
-				t.Errorf("invalid glg instance 2 type:\t%v", val)
 			}
 			if lev1.tag != lev2.tag || lev1.mode != lev2.mode {
 				t.Errorf("Expect %v, want %v", lev2, lev1)
@@ -115,18 +107,10 @@ func TestGet(t *testing.T) {
 		if !reflect.DeepEqual(ins1, ins2) {
 			t.Errorf("Expect %v, want %v", ins2, ins1)
 		}
-		ins1.logger.Range(func(key, val interface{}) bool {
-			lev1, ok := val.(*logger)
-			if !ok {
-				t.Errorf("invalid glg instance 1 type:\t%v", val)
-			}
-			i2, ok := ins2.logger.Load(key.(LEVEL))
+		ins1.logger.Range(func(lev LEVEL, lev1 *logger) bool {
+			lev2, ok := ins2.logger.Load(lev)
 			if !ok {
 				t.Error("glg instance 2 not found")
-			}
-			lev2, ok := i2.(*logger)
-			if !ok {
-				t.Errorf("invalid glg instance 2 type:\t%v", val)
 			}
 			if !reflect.DeepEqual(lev1, lev2) {
 				t.Errorf("Expect %v, want %v", lev2, lev1)
@@ -319,19 +303,10 @@ func TestGlg_InitWriter(t *testing.T) {
 			t.Errorf("Expect %v, want %v", ins2.GetCurrentMode(LOG), STD)
 		}
 
-		ins1.logger.Range(func(key, val interface{}) bool {
-
-			lev1, ok := val.(*logger)
-			if !ok {
-				t.Errorf("invalid glg instance 1 type:\t%v", val)
-			}
-			i2, ok := ins2.logger.Load(key.(LEVEL))
+		ins1.logger.Range(func(lev LEVEL, lev1 *logger) bool {
+			lev2, ok := ins2.logger.Load(lev)
 			if !ok {
 				t.Error("glg instance 2 not found")
-			}
-			lev2, ok := i2.(*logger)
-			if !ok {
-				t.Errorf("invalid glg instance 2 type:\t%v", val)
 			}
 			if !reflect.DeepEqual(lev1, lev2) {
 				t.Errorf("Expect %v, want %v", lev2, lev1)
@@ -373,13 +348,9 @@ func TestGlg_SetWriter(t *testing.T) {
 					t.Errorf("Glg.SetWriter() = %v, want %v", got, tt.msg)
 				}
 			} else {
-				l, ok := g.logger.Load(INFO)
+				ins, ok := g.logger.Load(INFO)
 				if !ok {
 					t.Error("glg instance not found")
-				}
-				ins, ok := l.(*logger)
-				if !ok {
-					t.Errorf("invalid glg instance type:\t%v", l)
 				}
 				if ins.writer != nil {
 					t.Errorf("Glg.SetWriter() = %v, want %v", ins.writer, tt.want)
@@ -418,13 +389,9 @@ func TestGlg_AddWriter(t *testing.T) {
 					t.Errorf("Glg.AddWriter() = %vwant %v", got, want)
 				}
 			} else {
-				l, ok := g.logger.Load(INFO)
+				ins, ok := g.logger.Load(INFO)
 				if !ok {
 					t.Error("glg instance not found")
-				}
-				ins, ok := l.(*logger)
-				if !ok {
-					t.Errorf("invalid glg instance type:\t%v", l)
 				}
 				if ins.writer == nil {
 					t.Errorf("Glg.AddWriter() = %v, want %v", ins.writer, tt.want)
@@ -475,13 +442,9 @@ func TestGlg_SetLevelColor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := New()
 			g.SetLevelColor(tt.level, tt.color)
-			l, ok := g.logger.Load(tt.level)
+			ins, ok := g.logger.Load(tt.level)
 			if !ok {
 				t.Error("glg instance not found")
-			}
-			ins, ok := l.(*logger)
-			if !ok {
-				t.Errorf("invalid glg instance type:\t%v", l)
 			}
 			got := ins.color(tt.txt)
 			if !reflect.DeepEqual(got, tt.want) {
@@ -518,13 +481,9 @@ func TestGlg_SetLevelWriter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := New()
 			g.SetLevelWriter(tt.level, tt.writer)
-			l, ok := g.logger.Load(tt.level)
+			ins, ok := g.logger.Load(tt.level)
 			if !ok {
 				t.Error("glg instance not found")
-			}
-			ins, ok := l.(*logger)
-			if !ok {
-				t.Errorf("invalid glg instance type:\t%v", l)
 			}
 			if !reflect.DeepEqual(ins.writer, tt.writer) {
 				t.Errorf("Glg.SetLevelWriter() = %v, want %v", ins.writer, tt.writer)
@@ -592,13 +551,9 @@ func TestGlg_AddLevelWriter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			g := tt.glg
 			g.AddLevelWriter(tt.level, tt.writer)
-			l, ok := g.logger.Load(tt.level)
+			ins, ok := g.logger.Load(tt.level)
 			if !ok {
 				t.Error("glg instance not found")
-			}
-			ins, ok := l.(*logger)
-			if !ok {
-				t.Errorf("invalid glg instance type:\t%v", l)
 			}
 			if !tt.multi && tt.writer != nil && !reflect.DeepEqual(ins.writer, tt.writer) {
 				t.Errorf("Glg.AddLevelWriter() = %v, want %v", ins.writer, tt.writer)
@@ -627,13 +582,9 @@ func TestGlg_AddStdLevel(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := New().AddStdLevel(tt.level, STD, false)
-			l, ok := g.logger.Load(g.TagStringToLevel(tt.level))
+			_, ok := g.logger.Load(g.TagStringToLevel(tt.level))
 			if !ok {
 				t.Error("glg instance not found")
-			}
-			ins, ok := l.(*logger)
-			if !ok || ins == nil {
-				t.Errorf("invalid glg instance type:\t%v", l)
 			}
 		})
 	}
@@ -659,13 +610,9 @@ func TestGlg_AddErrLevel(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := New().AddErrLevel(tt.level, STD, false)
-			l, ok := g.logger.Load(g.TagStringToLevel(tt.level))
+			_, ok := g.logger.Load(g.TagStringToLevel(tt.level))
 			if !ok {
 				t.Error("glg instance not found")
-			}
-			ins, ok := l.(*logger)
-			if !ok || ins == nil {
-				t.Errorf("invalid glg instance type:\t%v", l)
 			}
 		})
 	}
@@ -744,7 +691,7 @@ func TestGlg_EnableColor(t *testing.T) {
 			if !ok {
 				t.Error("glg instance not found")
 			}
-			got := l.(*logger).isColor
+			got := l.isColor
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Glg.EnableColor() = %v, want %v", got, tt.want)
 			}
@@ -770,7 +717,7 @@ func TestGlg_DisableColor(t *testing.T) {
 			if !ok {
 				t.Error("glg instance not found")
 			}
-			got := l.(*logger).isColor
+			got := l.isColor
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Glg.DisableColor() = %v, want %v", got, tt.want)
 			}
@@ -798,7 +745,7 @@ func TestGlg_EnableLevelColor(t *testing.T) {
 			if !ok {
 				t.Error("glg instance not found")
 			}
-			got := l.(*logger).isColor
+			got := l.isColor
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Glg.DisableColor() = %v, want %v", got, tt.want)
 			}
@@ -826,7 +773,7 @@ func TestGlg_DisableLevelColor(t *testing.T) {
 			if !ok {
 				t.Error("glg instance not found")
 			}
-			got := l.(*logger).isColor
+			got := l.isColor
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Glg.DisableColor() = %v, want %v", got, tt.want)
 			}
@@ -3840,7 +3787,7 @@ func Test_blankFormat(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := blankFormat(len(tt.vals)); got != tt.want {
+			if got := Get().blankFormat(len(tt.vals)); got != tt.want {
 				t.Errorf("blankFormat() = %v, want %v", got, tt.want)
 			}
 		})
