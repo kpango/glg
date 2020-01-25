@@ -33,7 +33,7 @@ type RotateWriter struct {
 	buf    *bytes.Buffer
 }
 
-func NewRotateWriter(w io.Writer, dur time.Duration, buf *bytes.Buffer) *RotateWriter {
+func NewRotateWriter(w io.Writer, dur time.Duration, buf *bytes.Buffer) io.WriteCloser {
 	return &RotateWriter{
 		writer: w,
 		dur:    dur,
@@ -70,10 +70,11 @@ func (r *RotateWriter) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-func (r *RotateWriter) Close() {
+func (r *RotateWriter) Close() error {
 	if r.cancel != nil {
 		r.cancel()
 	}
+	return nil
 }
 
 func main() {
@@ -109,6 +110,7 @@ func main() {
 		// SetLevelWriter(glg.INFO, customWriter).
 		// SetLevelWriter(glg.WARN, customWriter).
 		// SetLevelWriter(glg.ERR, customWriter).
+		EnableJSON().
 		AddLevelWriter(glg.INFO, infolog).                         // add info log file destination
 		AddLevelWriter(glg.ERR, errlog).                           // add error log file destination
 		AddLevelWriter(glg.WARN, rotate).                          // add error log file destination
@@ -136,6 +138,15 @@ func main() {
 	glg.Printf("%s : %s", "printf", "formatted")
 	glg.CustomLog(customTag, "custom logging")
 	glg.CustomLog(customErrTag, "custom error logging")
+	glg.Info("hello", struct {
+		Name   string
+		Age    int
+		Gender string
+	}{
+		Name:   "kpango",
+		Age:    28,
+		Gender: "male",
+	}, 2020)
 
 	go func() {
 		time.Sleep(time.Second * 5)
