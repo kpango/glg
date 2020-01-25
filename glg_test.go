@@ -3856,3 +3856,24 @@ func TestRawString(t *testing.T) {
 		})
 	}
 }
+
+func TestGlg_EnableJSON(t *testing.T) {
+	if Get().EnableJSON().enableJSON != true {
+		t.Error("json mode is not enabled")
+	}
+}
+
+func TestGlg_DisableJSON(t *testing.T) {
+	if Get().DisableJSON().enableJSON != false {
+		t.Error("json mode is not disables")
+	}
+
+}
+
+func TestGlg_EnablePoolBuffer(t *testing.T) {
+	g := Get().EnablePoolBuffer(100)
+	_, ok := g.buffer.Get().(*bytes.Buffer)
+	if !ok {
+		t.Error("buffer is not bytes.Buffer")
+	}
+}
