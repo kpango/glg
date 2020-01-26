@@ -29,9 +29,10 @@ jobs:
       - run:
           name: run tests
           command: |
-            go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
+            go test -v -timeout 1h -race -covermode=atomic -coverprofile=coverage.out ./...
             go tool cover -html=coverage.out -o coverage.html
             bash <(curl -s https://codecov.io/bash)
+          no_output_timeout: 1.5h
       - store_artifacts:
           path: ./coverage.html
       - save_cache:

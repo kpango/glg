@@ -56,7 +56,7 @@ lint:
 	gometalinter --enable-all . | rg -v comment
 
 test: clean init
-	GO111MODULE=on go test --race -v $(go list ./... | rg -v vendor)
+	GO111MODULE=on go test --race -timeout 1h -v $(go list ./... | rg -v vendor)
 
 contributors:
 	git log --format='%aN <%aE>' | sort -fu > CONTRIBUTORS

@@ -24,6 +24,7 @@ package glg
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -3857,9 +3858,41 @@ func TestRawString(t *testing.T) {
 	}
 }
 
+type dumpWriter struct {
+	body []byte
+}
+
+func (d *dumpWriter) Write(b []byte) (int, error) {
+	d.body = append(d.body, b...)
+	return len(b), nil
+}
+
+func (d dumpWriter) Read(p []byte) (n int, err error) {
+	copy(p, d.body)
+	return len(d.body), nil
+}
+
 func TestGlg_EnableJSON(t *testing.T) {
 	if Get().EnableJSON().enableJSON != true {
 		t.Error("json mode is not enabled")
+	}
+	var d dumpWriter
+	g := New().SetWriter(&d).SetMode(WRITER).EnableJSON()
+	txt := "hello"
+	err := g.Info(txt)
+	if err != nil {
+		t.Error(err)
+	}
+	var dec jsonFormat
+	err = json.NewDecoder(d).Decode(&dec)
+	if err != nil {
+		t.Error(err)
+	}
+	if dec.Level != INFO.String() {
+		t.Error("invalid Level")
+	}
+	if i, ok := dec.Detail.([]interface{}); !ok || i[0].(string) != txt {
+		t.Error("invalid json")
 	}
 }
 
