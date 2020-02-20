@@ -110,7 +110,7 @@ func main() {
 		// SetLevelWriter(glg.INFO, customWriter).
 		// SetLevelWriter(glg.WARN, customWriter).
 		// SetLevelWriter(glg.ERR, customWriter).
-		EnableJSON().
+		// EnableJSON().
 		AddLevelWriter(glg.INFO, infolog).                         // add info log file destination
 		AddLevelWriter(glg.ERR, errlog).                           // add error log file destination
 		AddLevelWriter(glg.WARN, rotate).                          // add error log file destination
@@ -138,6 +138,9 @@ func main() {
 	glg.Printf("%s : %s", "printf", "formatted")
 	glg.CustomLog(customTag, "custom logging")
 	glg.CustomLog(customErrTag, "custom error logging")
+    glg.Info("kpango's glg support json logging")
+    glg.Get().EnableJSON()
+    glg.Warn("kpango's glg", "support", "json", "logging")
 	glg.Info("hello", struct {
 		Name   string
 		Age    int
@@ -179,7 +182,7 @@ func main() {
 		}
 	}()
 
-	glg.Get().AddLevelWriter(glg.DEBG, NetWorkLogger{}) // add info log file destination
+	glg.Get().AddLevelWriter(glg.DEBG, NetWorkLogger{}).EnableJSON() // add info log file destination
 
 	http.Handle("/glg", glg.HTTPLoggerFunc("glg sample", func(w http.ResponseWriter, r *http.Request) {
 		glg.Info("glg HTTP server logger sample")
