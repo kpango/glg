@@ -119,11 +119,15 @@ func main() {
 }
 ```
 
-![Sample Logs](https://github.com/kpango/glg/raw/master/images/sample.png)
+<div align="center">
+<img src="./images/sample.png" width="100%">
+</div>
 
 ## Benchmarks
 
-![Bench](https://github.com/kpango/glg/raw/master/images/bench.png)
+<div align="center">
+<img src="./images/bench.png" width="100%">
+</div>
 
 ## Contribution
 1. Fork it ( https://github.com/kpango/glg/fork )
