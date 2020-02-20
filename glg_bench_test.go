@@ -27,6 +27,8 @@ import (
 	"testing"
 
 	"github.com/kpango/glg"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var (
@@ -57,7 +59,19 @@ SOFTWARE.`
 	testFloat = 10.10
 
 	testFormat = "format %s,\t%d,%f\n"
+
+	testJSON = JSONMessage{
+		Message: testMsg,
+		Number:  testInt,
+		Float:   testFloat,
+	}
 )
+
+type JSONMessage struct {
+	Message string
+	Number  int
+	Float   float64
+}
 
 type MockWriter struct {
 }
@@ -97,6 +111,22 @@ func BenchmarkGlg(b *testing.B) {
 	})
 }
 
+func BenchmarkZap(b *testing.B) {
+	cfg := zap.NewProductionConfig()
+	logger := zap.New(zapcore.NewCore(zapcore.NewConsoleEncoder(cfg.EncoderConfig), zapcore.AddSync(&MockWriter{}), cfg.Level))
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Info(testMsg)
+			logger.Info(testMsg)
+			logger.Info(testMsg)
+			logger.Info(testMsg)
+			logger.Info(testMsg)
+		}
+	})
+}
+
 func BenchmarkDefaultLogf(b *testing.B) {
 	log.SetOutput(&MockWriter{})
 	b.ReportAllocs()
@@ -123,6 +153,53 @@ func BenchmarkGlgf(b *testing.B) {
 			glg.Logf(testFormat, testMsg, testInt, testFloat)
 			glg.Logf(testFormat, testMsg, testInt, testFloat)
 			glg.Logf(testFormat, testMsg, testInt, testFloat)
+		}
+	})
+}
+
+func BenchmarkZapf(b *testing.B) {
+	cfg := zap.NewProductionConfig()
+	logger := zap.New(zapcore.NewCore(zapcore.NewConsoleEncoder(cfg.EncoderConfig), zapcore.AddSync(&MockWriter{}), cfg.Level)).Sugar()
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Infof(testFormat, testMsg, testInt, testFloat)
+			logger.Infof(testFormat, testMsg, testInt, testFloat)
+			logger.Infof(testFormat, testMsg, testInt, testFloat)
+			logger.Infof(testFormat, testMsg, testInt, testFloat)
+			logger.Infof(testFormat, testMsg, testInt, testFloat)
+		}
+	})
+}
+
+func BenchmarkGlgJSON(b *testing.B) {
+	glg.Get().SetMode(glg.WRITER).SetWriter(&MockWriter{}).EnableJSON()
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			glg.Log(testJSON)
+			glg.Log(testJSON)
+			glg.Log(testJSON)
+			glg.Log(testJSON)
+			glg.Log(testJSON)
+		}
+	})
+}
+
+func BenchmarkZapJSON(b *testing.B) {
+	cfg := zap.NewProductionConfig()
+	logger := zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(cfg.EncoderConfig), zapcore.AddSync(&MockWriter{}), cfg.Level)).Sugar()
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Info(testJSON)
+			logger.Info(testJSON)
+			logger.Info(testJSON)
+			logger.Info(testJSON)
+			logger.Info(testJSON)
 		}
 	})
 }

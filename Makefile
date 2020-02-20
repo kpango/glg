@@ -19,8 +19,8 @@ bench: clean init
 	go test -count=5 -run=NONE -bench . -benchmem
 
 init:
-	GO111MODULE=on go mod init
-	GO111MODULE=on go mod vendor
+	go mod init
+	go mod tidy
 	sleep 3
 
 profile: clean init
