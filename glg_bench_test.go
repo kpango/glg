@@ -97,7 +97,8 @@ func BenchmarkDefaultLog(b *testing.B) {
 }
 
 func BenchmarkGlg(b *testing.B) {
-	glg.Get().SetMode(glg.WRITER).SetWriter(&MockWriter{})
+	glg.Reset()
+	glg.Get().SetMode(glg.WRITER).SetWriter(&MockWriter{}).EnablePoolBuffer(100)
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -143,7 +144,8 @@ func BenchmarkDefaultLogf(b *testing.B) {
 }
 
 func BenchmarkGlgf(b *testing.B) {
-	glg.Get().SetMode(glg.WRITER).SetWriter(&MockWriter{})
+	glg.Reset()
+	glg.Get().SetMode(glg.WRITER).SetWriter(&MockWriter{}).EnablePoolBuffer(100)
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -174,7 +176,8 @@ func BenchmarkZapf(b *testing.B) {
 }
 
 func BenchmarkGlgJSON(b *testing.B) {
-	glg.Get().SetMode(glg.WRITER).SetWriter(&MockWriter{}).EnableJSON()
+	glg.Reset()
+	glg.Get().SetMode(glg.WRITER).SetWriter(&MockWriter{}).EnablePoolBuffer(100).EnableJSON()
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

@@ -136,7 +136,7 @@ var (
 	// exit for Faltal error
 	exit = os.Exit
 
-	bufferSize = 2000
+	bufferSize = 500
 )
 
 func init() {
@@ -288,12 +288,8 @@ func (g *Glg) DisableJSON() *Glg {
 }
 
 func (g *Glg) EnablePoolBuffer(size int) *Glg {
-	bufs := make([]*bytes.Buffer, 100)
-	for i := range bufs {
-		bufs[i] = g.buffer.Get().(*bytes.Buffer)
-	}
-	for _, buf := range bufs {
-		g.buffer.Put(buf)
+	for range make([]struct{}, size) {
+		g.buffer.Put(g.buffer.Get().(*bytes.Buffer))
 	}
 	return g
 }
@@ -1149,6 +1145,12 @@ func Fatalln(val ...interface{}) {
 // use this function to register arbitrary function
 func ReplaceExitFunc(fn func(i int)) {
 	exit = fn
+}
+
+// Reset provides parameter reset function for glg struct instance
+func Reset() *Glg {
+	glg = glg.Reset()
+	return glg
 }
 
 // Reset provides parameter reset function for glg struct instance

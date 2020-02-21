@@ -3725,6 +3725,32 @@ func TestReplaceExitFunc(t *testing.T) {
 	}
 }
 
+func TestReset(t *testing.T) {
+	tests := []struct {
+		name string
+		tag  string
+		g    *Glg
+		want LEVEL
+	}{
+		{
+			name: "reset",
+			tag:  "glg",
+			g:    Reset(),
+			want: 255,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.g.AddStdLevel(tt.tag, NONE, false)
+			tt.g.Reset()
+			got := tt.g.TagStringToLevel(tt.tag)
+			if tt.want == got {
+				t.Errorf("Reset() = got %v want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestGlg_Reset(t *testing.T) {
 	tests := []struct {
 		name string
