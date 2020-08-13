@@ -2,7 +2,7 @@ alias:
   default: &default
     working_directory: /go/src/github.com/kpango/glg
     docker:
-      - image: circleci/golang:1.14
+      - image: circleci/golang:1.15
         environment:
           GOPATH: "/go"
           GO111MODULE: "on"
