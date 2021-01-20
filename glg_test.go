@@ -3909,7 +3909,7 @@ func TestGlg_EnableJSON(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	var dec jsonFormat
+	var dec JSONFormat
 	err = json.NewDecoder(d).Decode(&dec)
 	if err != nil {
 		t.Error(err)

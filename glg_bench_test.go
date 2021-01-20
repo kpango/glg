@@ -68,9 +68,9 @@ SOFTWARE.`
 )
 
 type JSONMessage struct {
-	Message string
-	Number  int
-	Float   float64
+	Message string  `json:"message,omitempty"`
+	Number  int     `json:"number,omitempty"`
+	Float   float64 `json:"float,omitempty"`
 }
 
 type MockWriter struct {
@@ -192,6 +192,32 @@ func BenchmarkGlgJSON(b *testing.B) {
 }
 
 func BenchmarkZapJSON(b *testing.B) {
+	cfg := zap.NewProductionConfig()
+	logger := zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(cfg.EncoderConfig), zapcore.AddSync(&MockWriter{}), cfg.Level))
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logger.Info("", zap.String("message", testJSON.Message),
+				zap.Int("number", testJSON.Number),
+				zap.Float64("float", testJSON.Float))
+			logger.Info("", zap.String("message", testJSON.Message),
+				zap.Int("number", testJSON.Number),
+				zap.Float64("float", testJSON.Float))
+			logger.Info("",zap.String("message", testJSON.Message),
+				zap.Int("number", testJSON.Number),
+				zap.Float64("float", testJSON.Float))
+			logger.Info("", zap.String("message", testJSON.Message),
+				zap.Int("number", testJSON.Number),
+				zap.Float64("float", testJSON.Float))
+			logger.Info("", zap.String("message", testJSON.Message),
+				zap.Int("number", testJSON.Number),
+				zap.Float64("float", testJSON.Float))
+		}
+	})
+}
+
+func BenchmarkZapSugarJSON(b *testing.B) {
 	cfg := zap.NewProductionConfig()
 	logger := zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(cfg.EncoderConfig), zapcore.AddSync(&MockWriter{}), cfg.Level)).Sugar()
 	b.ReportAllocs()
