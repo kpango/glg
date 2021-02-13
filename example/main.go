@@ -138,10 +138,15 @@ func main() {
 	glg.Printf("%s : %s", "printf", "formatted")
 	glg.CustomLog(customTag, "custom logging")
 	glg.CustomLog(customErrTag, "custom error logging")
-    glg.Info("kpango's glg support json logging")
-    glg.Get().EnableJSON()
-    glg.Warn("kpango's glg", "support", "json", "logging")
-	glg.Info("hello", struct {
+	glg.Info("kpango's glg support json logging")
+	glg.Get().EnableJSON()
+	err := glg.Warn("kpango's glg", "support", "json", "logging")
+	if err != nil {
+		glg.Get().DisableJSON()
+		glg.Error(err)
+		glg.Get().EnableJSON()
+	}
+	err = glg.Info("hello", struct {
 		Name   string
 		Age    int
 		Gender string
@@ -150,6 +155,11 @@ func main() {
 		Age:    28,
 		Gender: "male",
 	}, 2020)
+	if err != nil {
+		glg.Get().DisableJSON()
+		glg.Error(err)
+		glg.Get().EnableJSON()
+	}
 
 	go func() {
 		time.Sleep(time.Second * 5)

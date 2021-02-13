@@ -36,7 +36,7 @@ import (
 	"time"
 	"unsafe"
 
-	jsoniter "github.com/json-iterator/go"
+	json "github.com/goccy/go-json"
 	"github.com/kpango/fastime"
 )
 
@@ -50,8 +50,9 @@ type Glg struct {
 	enableJSON   bool
 }
 
-type jsonFormat struct {
-	Date   time.Time
+// JSONFormat is json object structure for logging
+type JSONFormat struct {
+	Date   string
 	Level  string
 	Detail interface{}
 }
@@ -704,8 +705,8 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		} else {
 			detail = val
 		}
-		return jsoniter.NewEncoder(w).Encode(jsonFormat{
-			Date:   fastime.Now(),
+		return json.NewEncoder(w).Encode(JSONFormat{
+			Date:   string(fastime.FormattedNow()),
 			Level:  level.String(),
 			Detail: detail,
 		})

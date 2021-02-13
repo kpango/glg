@@ -1,9 +1,9 @@
 module github.com/kpango/glg
 
-go 1.13
+go 1.15
 
 require (
-	github.com/json-iterator/go v1.1.10
+	github.com/goccy/go-json v0.4.4
 	github.com/kpango/fastime v1.0.16
 	go.uber.org/zap v1.16.0
 )
