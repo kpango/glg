@@ -50,6 +50,7 @@ type Glg struct {
 	enableJSON   bool
 }
 
+// JSONFormat is json object structure for logging
 type JSONFormat struct {
 	Date   string
 	Level  string
