@@ -13,6 +13,16 @@ import (
 	"github.com/kpango/glg"
 )
 
+var dummyObject = struct {
+	Age          int    `json:"age,omitempty"`
+	Name         string `json:"name,omitempty"`
+	IsProgrammer bool   `json:"is_programmer,omitempty"`
+}{
+	Age:          29,
+	Name:         "Yusuke Kato",
+	IsProgrammer: true,
+}
+
 // NetWorkLogger sample network logger
 type NetWorkLogger struct{}
 
@@ -188,7 +198,7 @@ func main() {
 		for i := 0; i < 100; i++ {
 			glg.Error("error")
 			time.Sleep(time.Millisecond * 100)
-			glg.CustomLog(customTag, "custom logging")
+			glg.CustomLog(customTag, dummyObject)
 		}
 	}()
 

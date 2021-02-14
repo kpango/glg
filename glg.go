@@ -52,9 +52,9 @@ type Glg struct {
 
 // JSONFormat is json object structure for logging
 type JSONFormat struct {
-	Date   string
-	Level  string
-	Detail interface{}
+	Date   string      `json:"date,omitempty"`
+	Level  string      `json:"level,omitempty"`
+	Detail interface{} `json:"detail,omitempty"`
 }
 
 // MODE is logging mode (std only, writer only, std & writer)
@@ -442,8 +442,7 @@ func (g *Glg) AddLevelWriter(level LEVEL, writer io.Writer) *Glg {
 
 // AddStdLevel adds std log level and returns LEVEL
 func (g *Glg) AddStdLevel(tag string, mode MODE, isColor bool) *Glg {
-	atomic.AddUint32(g.levelCounter, 1)
-	lev := LEVEL(atomic.LoadUint32(g.levelCounter))
+	lev := LEVEL(atomic.AddUint32(g.levelCounter, 1))
 	tag = strings.ToUpper(tag)
 	g.levelMap.Store(tag, lev)
 	l := &logger{
@@ -683,9 +682,10 @@ func White(str string) string {
 func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 	log, ok := g.logger.Load(level)
 	if !ok {
-		return fmt.Errorf("error:\tLog Level %s Not Found", level)
+		return fmt.Errorf("error:\tLog Level %d Not Found", level)
 	}
 
+	fn := fastime.FormattedNow()
 	if g.enableJSON {
 		var w io.Writer
 		switch log.writeMode {
@@ -701,12 +701,14 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		var detail interface{}
 		if format != "" {
 			detail = fmt.Sprintf(format, val...)
-		} else {
+		} else if len(val) > 1 {
 			detail = val
+		} else {
+			detail = val[0]
 		}
 		return json.NewEncoder(w).Encode(JSONFormat{
-			Date:   string(fastime.FormattedNow()),
-			Level:  level.String(),
+			Date:   *(*string)(unsafe.Pointer(&fn)),
+			Level:  log.tag,
 			Detail: detail,
 		})
 	}
@@ -717,7 +719,7 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		b   = g.buffer.Get().(*bytes.Buffer)
 	)
 
-	b.Write(fastime.FormattedNow())
+	b.Write(fn)
 	b.Write(log.rawtag)
 	b.WriteString(format)
 
