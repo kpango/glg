@@ -35,7 +35,7 @@ var (
 	testMsg = `benchmark sample message blow
 MIT License
 
-Copyright (c) 2019 kpango (Yusuke Kato)
+Copyright (c) 2021 kpango (Yusuke Kato)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -204,7 +204,7 @@ func BenchmarkZapJSON(b *testing.B) {
 			logger.Info("", zap.String("message", testJSON.Message),
 				zap.Int("number", testJSON.Number),
 				zap.Float64("float", testJSON.Float))
-			logger.Info("",zap.String("message", testJSON.Message),
+			logger.Info("", zap.String("message", testJSON.Message),
 				zap.Int("number", testJSON.Number),
 				zap.Float64("float", testJSON.Float))
 			logger.Info("", zap.String("message", testJSON.Message),

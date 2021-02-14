@@ -42,7 +42,7 @@ import (
 
 // Glg is glg base struct
 type Glg struct {
-	bufferSize   atomic.Value
+	bs           *uint64
 	logger       loggers
 	levelCounter *uint32
 	levelMap     levelMap
@@ -67,6 +67,7 @@ type wMode uint8
 
 type logger struct {
 	tag       string
+	rawtag    []byte
 	writer    io.Writer
 	std       io.Writer
 	color     func(string) string
@@ -126,8 +127,10 @@ const (
 	rc  = "\n"
 	rcl = len(rc)
 
-	sep  = "]:\t"
-	sepl = len(sep)
+	lsep  = "\t["
+	lsepl = len(lsep)
+	sep   = "]:\t"
+	sepl  = len(sep)
 )
 
 var (
@@ -136,8 +139,6 @@ var (
 
 	// exit for Faltal error
 	exit = os.Exit
-
-	bufferSize = 500
 )
 
 func init() {
@@ -192,12 +193,13 @@ func New() *Glg {
 	g := &Glg{
 		levelCounter: new(uint32),
 	}
+	g.bs = new(uint64)
 
-	g.bufferSize.Store(bufferSize)
+	atomic.StoreUint64(g.bs, uint64(len(timeFormat)+lsepl+sepl))
 
 	g.buffer = sync.Pool{
 		New: func() interface{} {
-			return bytes.NewBuffer(make([]byte, 0, g.bufferSize.Load().(int)))
+			return bytes.NewBuffer(make([]byte, 0, int(atomic.LoadUint64(g.bs))))
 		},
 	}
 
@@ -262,6 +264,7 @@ func New() *Glg {
 		},
 	} {
 		log.tag = lev.String()
+		log.rawtag = []byte(lsep + log.tag + sep)
 		log.updateMode()
 		g.logger.Store(lev, log)
 	}
@@ -328,6 +331,7 @@ func (g *Glg) SetPrefix(lev LEVEL, pref string) *Glg {
 	l, ok := g.logger.Load(lev)
 	if ok {
 		l.tag = pref
+		l.rawtag = []byte(lsep + l.tag + sep)
 		g.logger.Store(lev, l)
 	}
 	return g
@@ -340,13 +344,6 @@ func (g *Glg) GetCurrentMode(level LEVEL) MODE {
 		return l.mode
 	}
 	return NONE
-}
-
-func (g *Glg) SetLogBufferSize(size int) *Glg {
-	if size > (len(timeFormat) + len("[") + len(sep)) {
-		g.bufferSize.Store(size)
-	}
-	return g
 }
 
 // InitWriter is initialize glg writer
@@ -456,6 +453,7 @@ func (g *Glg) AddStdLevel(tag string, mode MODE, isColor bool) *Glg {
 		isColor: isColor,
 		mode:    mode,
 		tag:     tag,
+		rawtag:  []byte(lsep + tag + sep),
 	}
 	l.updateMode()
 	g.logger.Store(lev, l)
@@ -475,6 +473,7 @@ func (g *Glg) AddErrLevel(tag string, mode MODE, isColor bool) *Glg {
 		isColor: isColor,
 		mode:    mode,
 		tag:     tag,
+		rawtag:  []byte(lsep + tag + sep),
 	}
 	l.updateMode()
 	g.logger.Store(lev, l)
@@ -719,9 +718,7 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 	)
 
 	b.Write(fastime.FormattedNow())
-	b.WriteString("\t[")
-	b.WriteString(log.tag)
-	b.WriteString(sep)
+	b.Write(log.rawtag)
 	b.WriteString(format)
 
 	switch {
@@ -747,6 +744,10 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		b.WriteString(rc)
 		buf = b.Bytes()
 		_, err = fmt.Fprintf(io.MultiWriter(log.std, log.writer), *(*string)(unsafe.Pointer(&buf)), val...)
+	}
+	bl := uint64(len(buf))
+	if atomic.LoadUint64(g.bs) < bl {
+		atomic.StoreUint64(g.bs, bl)
 	}
 	b.Reset()
 	g.buffer.Put(b)
