@@ -3917,7 +3917,7 @@ func TestGlg_EnableJSON(t *testing.T) {
 	if dec.Level != INFO.String() {
 		t.Error("invalid Level")
 	}
-	if i, ok := dec.Detail.([]interface{}); !ok || i[0].(string) != txt {
+	if i, ok := dec.Detail.(interface{}); !ok || i.(string) != txt {
 		t.Error("invalid json")
 	}
 }
