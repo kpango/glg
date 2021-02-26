@@ -1,6 +1,6 @@
 module github.com/kpango/glg
 
-go 1.15
+go 1.16
 
 require (
 	github.com/goccy/go-json v0.4.7
