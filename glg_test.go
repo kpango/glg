@@ -24,7 +24,6 @@ package glg
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -33,8 +32,11 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
+
+	json "github.com/goccy/go-json"
 )
 
 type ExitError int
@@ -3934,5 +3936,321 @@ func TestGlg_EnablePoolBuffer(t *testing.T) {
 	_, ok := g.buffer.Get().(*bytes.Buffer)
 	if !ok {
 		t.Error("buffer is not bytes.Buffer")
+	}
+}
+
+func Test_logger_updateMode(t *testing.T) {
+	type fields struct {
+		writer  io.Writer
+		isColor bool
+		mode    MODE
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   wMode
+	}{
+		{
+			name: "writeWriter mode",
+			fields: fields{
+				mode:   WRITER,
+				writer: new(bytes.Buffer),
+			},
+			want: writeWriter,
+		},
+
+		{
+			name: "writeColorBoth mode",
+			fields: fields{
+				mode:    BOTH,
+				isColor: true,
+				writer:  new(bytes.Buffer),
+			},
+			want: writeColorBoth,
+		},
+		{
+			name: "writeBoth mode",
+			fields: fields{
+				mode:   BOTH,
+				writer: new(bytes.Buffer),
+			},
+			want: writeBoth,
+		},
+		{
+			name: "writeColorStd mode due to nil writer",
+			fields: fields{
+				mode:    BOTH,
+				isColor: true,
+			},
+			want: writeColorStd,
+		},
+		{
+			name: "writeStd mode due to nil writer",
+			fields: fields{
+				mode: BOTH,
+			},
+			want: writeStd,
+		},
+		{
+			name: "writeColorStd mode",
+			fields: fields{
+				mode:    STD,
+				isColor: true,
+			},
+			want: writeColorStd,
+		},
+		{
+			name: "writeStd mode",
+			fields: fields{
+				mode: STD,
+			},
+			want: writeStd,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &logger{
+				writer:  tt.fields.writer,
+				isColor: tt.fields.isColor,
+				mode:    tt.fields.mode,
+			}
+			if got := l.updateMode(); l.writeMode != tt.want {
+				t.Errorf("logger.updateMode() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGlg_EnableTimestamp(t *testing.T) {
+	type fields struct {
+		bs           *uint64
+		logger       loggers
+		levelCounter *uint32
+		levelMap     levelMap
+		buffer       sync.Pool
+		enableJSON   bool
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   *Glg
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &Glg{
+				bs:           tt.fields.bs,
+				logger:       tt.fields.logger,
+				levelCounter: tt.fields.levelCounter,
+				levelMap:     tt.fields.levelMap,
+				buffer:       tt.fields.buffer,
+				enableJSON:   tt.fields.enableJSON,
+			}
+			if got := g.EnableTimestamp(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Glg.EnableTimestamp() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGlg_DisableTimestamp(t *testing.T) {
+	type fields struct {
+		bs           *uint64
+		logger       loggers
+		levelCounter *uint32
+		levelMap     levelMap
+		buffer       sync.Pool
+		enableJSON   bool
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		want   *Glg
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &Glg{
+				bs:           tt.fields.bs,
+				logger:       tt.fields.logger,
+				levelCounter: tt.fields.levelCounter,
+				levelMap:     tt.fields.levelMap,
+				buffer:       tt.fields.buffer,
+				enableJSON:   tt.fields.enableJSON,
+			}
+			if got := g.DisableTimestamp(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Glg.DisableTimestamp() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGlg_EnableLevelTimestamp(t *testing.T) {
+	type fields struct {
+		bs           *uint64
+		logger       loggers
+		levelCounter *uint32
+		levelMap     levelMap
+		buffer       sync.Pool
+		enableJSON   bool
+	}
+	type args struct {
+		lv LEVEL
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *Glg
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &Glg{
+				bs:           tt.fields.bs,
+				logger:       tt.fields.logger,
+				levelCounter: tt.fields.levelCounter,
+				levelMap:     tt.fields.levelMap,
+				buffer:       tt.fields.buffer,
+				enableJSON:   tt.fields.enableJSON,
+			}
+			if got := g.EnableLevelTimestamp(tt.args.lv); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Glg.EnableLevelTimestamp() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGlg_DisableLevelTimestamp(t *testing.T) {
+	type fields struct {
+		bs           *uint64
+		logger       loggers
+		levelCounter *uint32
+		levelMap     levelMap
+		buffer       sync.Pool
+		enableJSON   bool
+	}
+	type args struct {
+		lv LEVEL
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   *Glg
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &Glg{
+				bs:           tt.fields.bs,
+				logger:       tt.fields.logger,
+				levelCounter: tt.fields.levelCounter,
+				levelMap:     tt.fields.levelMap,
+				buffer:       tt.fields.buffer,
+				enableJSON:   tt.fields.enableJSON,
+			}
+			if got := g.DisableLevelTimestamp(tt.args.lv); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Glg.DisableLevelTimestamp() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGlg_blankFormat(t *testing.T) {
+	type fields struct {
+		bs           *uint64
+		logger       loggers
+		levelCounter *uint32
+		levelMap     levelMap
+		buffer       sync.Pool
+		enableJSON   bool
+	}
+	type args struct {
+		l int
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &Glg{
+				bs:           tt.fields.bs,
+				logger:       tt.fields.logger,
+				levelCounter: tt.fields.levelCounter,
+				levelMap:     tt.fields.levelMap,
+				buffer:       tt.fields.buffer,
+				enableJSON:   tt.fields.enableJSON,
+			}
+			if got := g.blankFormat(tt.args.l); got != tt.want {
+				t.Errorf("Glg.blankFormat() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_isModeEnable(t *testing.T) {
+	type args struct {
+		l LEVEL
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isModeEnable(tt.args.l); got != tt.want {
+				t.Errorf("isModeEnable() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGlg_isModeEnable(t *testing.T) {
+	type fields struct {
+		bs           *uint64
+		logger       loggers
+		levelCounter *uint32
+		levelMap     levelMap
+		buffer       sync.Pool
+		enableJSON   bool
+	}
+	type args struct {
+		l LEVEL
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &Glg{
+				bs:           tt.fields.bs,
+				logger:       tt.fields.logger,
+				levelCounter: tt.fields.levelCounter,
+				levelMap:     tt.fields.levelMap,
+				buffer:       tt.fields.buffer,
+				enableJSON:   tt.fields.enableJSON,
+			}
+			if got := g.isModeEnable(tt.args.l); got != tt.want {
+				t.Errorf("Glg.isModeEnable() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
