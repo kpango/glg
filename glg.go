@@ -66,14 +66,15 @@ type LEVEL uint8
 type wMode uint8
 
 type logger struct {
-	tag       string
-	rawtag    []byte
-	writer    io.Writer
-	std       io.Writer
-	color     func(string) string
-	isColor   bool
-	mode      MODE
-	writeMode wMode
+	tag              string
+	rawtag           []byte
+	writer           io.Writer
+	std              io.Writer
+	color            func(string) string
+	isColor          bool
+	mode             MODE
+	writeMode        wMode
+	disableTimestamp bool
 }
 
 const (
@@ -127,9 +128,10 @@ const (
 	rc  = "\n"
 	rcl = len(rc)
 
-	lsep  = "\t["
+	tab   = "\t"
+	lsep  = tab + "["
 	lsepl = len(lsep)
-	sep   = "]:\t"
+	sep   = "]:" + tab
 	sepl  = len(sep)
 )
 
@@ -479,6 +481,50 @@ func (g *Glg) AddErrLevel(tag string, mode MODE, isColor bool) *Glg {
 	return g
 }
 
+// EnableTimestamp enables timestamp output
+func (g *Glg) EnableTimestamp() *Glg {
+
+	g.logger.Range(func(lev LEVEL, l *logger) bool {
+		l.disableTimestamp = false
+		g.logger.Store(lev, l)
+		return true
+	})
+
+	return g
+}
+
+// DisableTimestamp disables timestamp output
+func (g *Glg) DisableTimestamp() *Glg {
+
+	g.logger.Range(func(lev LEVEL, l *logger) bool {
+		l.disableTimestamp = true
+		g.logger.Store(lev, l)
+		return true
+	})
+
+	return g
+}
+
+// EnableLevelTimestamp enables timestamp output
+func (g *Glg) EnableLevelTimestamp(lv LEVEL) *Glg {
+	l, ok := g.logger.Load(lv)
+	if ok {
+		l.disableTimestamp = false
+		g.logger.Store(lv, l)
+	}
+	return g
+}
+
+// DisableLevelTimestamp disables timestamp output
+func (g *Glg) DisableLevelTimestamp(lv LEVEL) *Glg {
+	l, ok := g.logger.Load(lv)
+	if ok {
+		l.disableTimestamp = true
+		g.logger.Store(lv, l)
+	}
+	return g
+}
+
 // EnableColor enables color output
 func (g *Glg) EnableColor() *Glg {
 
@@ -685,7 +731,6 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		return fmt.Errorf("error:\tLog Level %d Not Found", level)
 	}
 
-	fn := fastime.FormattedNow()
 	if g.enableJSON {
 		var w io.Writer
 		switch log.writeMode {
@@ -706,8 +751,13 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		} else {
 			detail = val[0]
 		}
+		var timestamp string
+		if !log.disableTimestamp {
+			fn := fastime.FormattedNow()
+			timestamp = *(*string)(unsafe.Pointer(&fn))
+		}
 		return json.NewEncoder(w).Encode(JSONFormat{
-			Date:   *(*string)(unsafe.Pointer(&fn)),
+			Date:   timestamp,
 			Level:  log.tag,
 			Detail: detail,
 		})
@@ -719,8 +769,12 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		b   = g.buffer.Get().(*bytes.Buffer)
 	)
 
-	b.Write(fn)
-	b.Write(log.rawtag)
+	if log.disableTimestamp {
+		b.Write(log.rawtag[len(tab):])
+	} else {
+		b.Write(fastime.FormattedNow())
+		b.Write(log.rawtag)
+	}
 	b.WriteString(format)
 
 	switch {

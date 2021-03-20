@@ -148,6 +148,17 @@ func main() {
 	glg.Printf("%s : %s", "printf", "formatted")
 	glg.CustomLog(customTag, "custom logging")
 	glg.CustomLog(customErrTag, "custom error logging")
+
+	glg.Info("kpango's glg supports disable timestamp for logging")
+	glg.Get().DisableTimestamp()
+	glg.Info("timestamp disabled")
+	glg.Warn("timestamp disabled")
+	glg.Log("timestamp disabled")
+	glg.Get().EnableTimestamp()
+	glg.Info("timestamp enabled")
+	glg.Warn("timestamp enabled")
+	glg.Log("timestamp enabled")
+
 	glg.Info("kpango's glg support json logging")
 	glg.Get().EnableJSON()
 	err := glg.Warn("kpango's glg", "support", "json", "logging")
