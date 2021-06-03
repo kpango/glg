@@ -73,8 +73,7 @@ type JSONMessage struct {
 	Float   float64 `json:"float,omitempty"`
 }
 
-type MockWriter struct {
-}
+type MockWriter struct{}
 
 func (m MockWriter) Write(b []byte) (int, error) {
 	_ = b

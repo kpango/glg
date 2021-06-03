@@ -30,9 +30,9 @@ import (
 )
 
 type loggers struct {
-	mu sync.Mutex
-	read atomic.Value
-	dirty map[LEVEL]*entryLoggers
+	mu     sync.Mutex
+	read   atomic.Value
+	dirty  map[LEVEL]*entryLoggers
 	misses int
 }
 
@@ -122,7 +122,6 @@ func (e *entryLoggers) unexpungeLocked() (wasExpunged bool) {
 func (e *entryLoggers) storeLocked(i **logger) {
 	atomic.StorePointer(&e.p, unsafe.Pointer(i))
 }
-
 
 func (m *loggers) Range(f func(key LEVEL, value *logger) bool) {
 	read, _ := m.read.Load().(readOnlyLoggers)

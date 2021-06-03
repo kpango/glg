@@ -294,7 +294,6 @@ func TestGlg_GetCurrentMode(t *testing.T) {
 }
 
 func TestGlg_InitWriter(t *testing.T) {
-
 	t.Run("InitWriter Check", func(t *testing.T) {
 		ins1 := New()
 		ins2 := ins1.InitWriter()
@@ -318,11 +317,9 @@ func TestGlg_InitWriter(t *testing.T) {
 			return true
 		})
 	})
-
 }
 
 func TestGlg_SetWriter(t *testing.T) {
-
 	tests := []struct {
 		name string
 		want io.Writer
@@ -496,7 +493,6 @@ func TestGlg_SetLevelWriter(t *testing.T) {
 }
 
 func TestGlg_AddLevelWriter(t *testing.T) {
-
 	tests := []struct {
 		glg    *Glg
 		name   string
@@ -673,7 +669,6 @@ func TestGlg_SetPrefix(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestGlg_EnableColor(t *testing.T) {
@@ -841,7 +836,8 @@ func TestGlg_TagStringToLevel(t *testing.T) {
 			tag:       "customTagFail",
 			want:      255,
 			createFlg: false,
-		}}
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.createFlg {
@@ -856,7 +852,6 @@ func TestGlg_TagStringToLevel(t *testing.T) {
 }
 
 func TestFileWriter(t *testing.T) {
-
 	tests := []struct {
 		name  string
 		path  string
@@ -897,7 +892,7 @@ func TestFileWriter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := FileWriter(tt.path, 0755)
+			f := FileWriter(tt.path, 0o755)
 			if f != nil {
 				got := f.Name()
 				if !tt.isErr && !reflect.DeepEqual(got, tt.want) {
@@ -909,7 +904,6 @@ func TestFileWriter(t *testing.T) {
 }
 
 func TestGlg_HTTPLogger(t *testing.T) {
-
 	type args struct {
 		name string
 		uri  string
@@ -1019,7 +1013,6 @@ func TestGlg_HTTPLoggerFunc(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			req, err := http.NewRequest(http.MethodGet, tt.args.uri, nil)
 			if err != nil {
 				t.Fatal(err)
@@ -1804,6 +1797,7 @@ func TestGlg_InfoFunc(t *testing.T) {
 		})
 	}
 }
+
 func TestInfo(t *testing.T) {
 	tests := []struct {
 		name string
@@ -2019,6 +2013,7 @@ func TestGlg_SuccessFunc(t *testing.T) {
 		})
 	}
 }
+
 func TestSuccess(t *testing.T) {
 	tests := []struct {
 		name string
@@ -2045,7 +2040,6 @@ func TestSuccess(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestSuccessf(t *testing.T) {
@@ -2127,6 +2121,7 @@ func TestSuccessFunc(t *testing.T) {
 		})
 	}
 }
+
 func TestGlg_Debug(t *testing.T) {
 	tests := []struct {
 		name string
@@ -2450,6 +2445,7 @@ func TestGlg_WarnFunc(t *testing.T) {
 		})
 	}
 }
+
 func TestWarn(t *testing.T) {
 	tests := []struct {
 		name string
@@ -2557,6 +2553,7 @@ func TestWarnFunc(t *testing.T) {
 		})
 	}
 }
+
 func TestGlg_CustomLog(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -2797,6 +2794,7 @@ func TestCustomLogFunc(t *testing.T) {
 		})
 	}
 }
+
 func TestGlg_Print(t *testing.T) {
 	tests := []struct {
 		name string
@@ -3284,6 +3282,7 @@ func TestErrorFunc(t *testing.T) {
 		})
 	}
 }
+
 func TestGlg_Fail(t *testing.T) {
 	tests := []struct {
 		name string
@@ -3391,6 +3390,7 @@ func TestGlg_FailFunc(t *testing.T) {
 		})
 	}
 }
+
 func TestFail(t *testing.T) {
 	tests := []struct {
 		name string
@@ -3498,6 +3498,7 @@ func TestFailFunc(t *testing.T) {
 		})
 	}
 }
+
 func TestGlg_Fatal(t *testing.T) {
 	tests := []struct {
 		name string
@@ -3928,7 +3929,6 @@ func TestGlg_DisableJSON(t *testing.T) {
 	if Get().DisableJSON().enableJSON != false {
 		t.Error("json mode is not disables")
 	}
-
 }
 
 func TestGlg_EnablePoolBuffer(t *testing.T) {

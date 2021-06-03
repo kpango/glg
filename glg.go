@@ -191,7 +191,6 @@ func (l *logger) updateMode() *logger {
 
 // New returns plain glg instance
 func New() *Glg {
-
 	g := &Glg{
 		levelCounter: new(uint32),
 	}
@@ -483,7 +482,6 @@ func (g *Glg) AddErrLevel(tag string, mode MODE, isColor bool) *Glg {
 
 // EnableTimestamp enables timestamp output
 func (g *Glg) EnableTimestamp() *Glg {
-
 	g.logger.Range(func(lev LEVEL, l *logger) bool {
 		l.disableTimestamp = false
 		g.logger.Store(lev, l)
@@ -495,7 +493,6 @@ func (g *Glg) EnableTimestamp() *Glg {
 
 // DisableTimestamp disables timestamp output
 func (g *Glg) DisableTimestamp() *Glg {
-
 	g.logger.Range(func(lev LEVEL, l *logger) bool {
 		l.disableTimestamp = true
 		g.logger.Store(lev, l)
@@ -527,7 +524,6 @@ func (g *Glg) DisableLevelTimestamp(lv LEVEL) *Glg {
 
 // EnableColor enables color output
 func (g *Glg) EnableColor() *Glg {
-
 	g.logger.Range(func(lev LEVEL, l *logger) bool {
 		l.isColor = true
 		l.updateMode()
@@ -540,7 +536,6 @@ func (g *Glg) EnableColor() *Glg {
 
 // DisableColor disables color output
 func (g *Glg) DisableColor() *Glg {
-
 	g.logger.Range(func(lev LEVEL, l *logger) bool {
 		l.isColor = false
 		l.updateMode()
@@ -650,7 +645,6 @@ func (g *Glg) HTTPLoggerFunc(name string, hf http.HandlerFunc) http.Handler {
 
 		err := g.Logf("Method: %s\tURI: %s\tName: %s\tTime: %s",
 			r.Method, r.RequestURI, name, (*(*time.Duration)(unsafe.Pointer(&start))).String())
-
 		if err != nil {
 			err = g.Error(err)
 			if err != nil {
@@ -791,7 +785,7 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		_, err = fmt.Fprintf(log.writer, *(*string)(unsafe.Pointer(&buf)), val...)
 	case log.writeMode^writeColorBoth == 0:
 		buf = b.Bytes()
-		var str = *(*string)(unsafe.Pointer(&buf))
+		str := *(*string)(unsafe.Pointer(&buf))
 		_, err = fmt.Fprintf(log.std, log.color(str)+rc, val...)
 		if err == nil {
 			_, err = fmt.Fprintf(log.writer, str+rc, val...)

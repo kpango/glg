@@ -30,9 +30,9 @@ import (
 )
 
 type levelMap struct {
-	mu sync.Mutex
-	read atomic.Value
-	dirty map[string]*entryLevelMap
+	mu     sync.Mutex
+	read   atomic.Value
+	dirty  map[string]*entryLevelMap
 	misses int
 }
 

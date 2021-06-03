@@ -88,15 +88,14 @@ func (r *RotateWriter) Close() error {
 }
 
 func main() {
-
 	// var errWriter io.Writer
 	// var customWriter io.Writer
-	infolog := glg.FileWriter("/tmp/info.log", 0666)
+	infolog := glg.FileWriter("/tmp/info.log", 0o666)
 
 	customTag := "FINE"
 	customErrTag := "CRIT"
 
-	errlog := glg.FileWriter("/tmp/error.log", 0666)
+	errlog := glg.FileWriter("/tmp/error.log", 0o666)
 	rotate := NewRotateWriter(os.Stdout, time.Second*10, bytes.NewBuffer(make([]byte, 0, 4096)))
 
 	defer infolog.Close()
@@ -124,7 +123,7 @@ func main() {
 		AddLevelWriter(glg.INFO, infolog).                         // add info log file destination
 		AddLevelWriter(glg.ERR, errlog).                           // add error log file destination
 		AddLevelWriter(glg.WARN, rotate).                          // add error log file destination
-		AddStdLevel(customTag, glg.STD, false).                    //user custom log level
+		AddStdLevel(customTag, glg.STD, false).                    // user custom log level
 		AddErrLevel(customErrTag, glg.STD, true).                  // user custom error log level
 		SetLevelColor(glg.TagStringToLevel(customTag), glg.Cyan).  // set color output to user custom level
 		SetLevelColor(glg.TagStringToLevel(customErrTag), glg.Red) // set color output to user custom level
