@@ -735,6 +735,10 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		return fmt.Errorf("error:\tLog Level %d Not Found", level)
 	}
 
+	if log.mode == NONE {
+		return nil
+	}
+
 	if g.enableJSON {
 		var w io.Writer
 		switch log.writeMode {
