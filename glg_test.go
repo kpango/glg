@@ -178,6 +178,102 @@ func TestGlg_SetMode(t *testing.T) {
 	}
 }
 
+func TestGlg_SetLevel(t *testing.T) {
+	tests := []struct {
+		name   string
+		level  LEVEL
+		lv     LEVEL
+		expect MODE
+	}{
+		{
+			name:   "debug mode enables all",
+			level:  DEBG,
+			lv:     LOG,
+			expect: STD,
+		},
+		{
+			name:   "WARN mode disables ok",
+			level:  WARN,
+			lv:     OK,
+			expect: NONE,
+		},
+		{
+			name:   "WARN mode disables info",
+			level:  WARN,
+			lv:     INFO,
+			expect: NONE,
+		},
+		{
+			name:   "WARN mode disables log",
+			level:  WARN,
+			lv:     LOG,
+			expect: NONE,
+		},
+		{
+			name:   "WARN mode disables print",
+			level:  WARN,
+			lv:     PRINT,
+			expect: NONE,
+		},
+		{
+			name:   "WARN mode disables debug",
+			level:  WARN,
+			lv:     DEBG,
+			expect: NONE,
+		},
+		{
+			name:   "FATAL mode disables fail",
+			level:  FATAL,
+			lv:     FAIL,
+			expect: NONE,
+		},
+		{
+			name:   "FATAL mode disables err",
+			level:  FATAL,
+			lv:     ERR,
+			expect: NONE,
+		},
+		{
+			name:   "FATAL mode disables ok",
+			level:  FATAL,
+			lv:     OK,
+			expect: NONE,
+		},
+		{
+			name:   "FATAL mode disables info",
+			level:  FATAL,
+			lv:     INFO,
+			expect: NONE,
+		},
+		{
+			name:   "FATAL mode disables log",
+			level:  FATAL,
+			lv:     LOG,
+			expect: NONE,
+		},
+		{
+			name:   "FATAL mode disables print",
+			level:  FATAL,
+			lv:     PRINT,
+			expect: NONE,
+		},
+		{
+			name:   "FATAL mode disables debug",
+			level:  FATAL,
+			lv:     DEBG,
+			expect: NONE,
+		},
+	}
+	g := New()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := g.SetLevel(tt.level).GetCurrentMode(tt.lv); got != tt.expect {
+				t.Errorf("Glg.SetLevel() = %v, want %v", got, tt.expect)
+			}
+		})
+	}
+}
+
 func TestGlg_SetLevelMode(t *testing.T) {
 	tests := []struct {
 		name  string

@@ -120,13 +120,9 @@ func main() {
 		// SetLevelWriter(glg.WARN, customWriter).
 		// SetLevelWriter(glg.ERR, customWriter).
 		// EnableJSON().
-		AddLevelWriter(glg.INFO, infolog).                         // add info log file destination
-		AddLevelWriter(glg.ERR, errlog).                           // add error log file destination
-		AddLevelWriter(glg.WARN, rotate).                          // add error log file destination
-		AddStdLevel(customTag, glg.STD, false).                    // user custom log level
-		AddErrLevel(customErrTag, glg.STD, true).                  // user custom error log level
-		SetLevelColor(glg.TagStringToLevel(customTag), glg.Cyan).  // set color output to user custom level
-		SetLevelColor(glg.TagStringToLevel(customErrTag), glg.Red) // set color output to user custom level
+		AddLevelWriter(glg.INFO, infolog). // add info log file destination
+		AddLevelWriter(glg.ERR, errlog).   // add error log file destination
+		AddLevelWriter(glg.WARN, rotate)   // add error log file destination
 
 	glg.Info("info")
 	glg.Infof("%s : %s", "info", "formatted")
@@ -145,10 +141,24 @@ func main() {
 	glg.Print("Print")
 	glg.Println("Println")
 	glg.Printf("%s : %s", "printf", "formatted")
+
+	// set global log level to ERR level
+	glg.Info("before setting level to ERR this message will show")
+	glg.Get().SetLevel(glg.ERR)
+	glg.Info("after setting level to ERR this message will not show")
+	glg.Error("this log is ERR level this will show")
+	glg.Get().SetLevel(glg.DEBG)
+	glg.Info("log level is now DEBG, this INFO level log will show")
+
+	glg.Get().
+		AddStdLevel(customTag, glg.STD, false).                    // user custom log level
+		AddErrLevel(customErrTag, glg.STD, true).                  // user custom error log level
+		SetLevelColor(glg.TagStringToLevel(customTag), glg.Cyan).  // set color output to user custom level
+		SetLevelColor(glg.TagStringToLevel(customErrTag), glg.Red) // set color output to user custom level
 	glg.CustomLog(customTag, "custom logging")
 	glg.CustomLog(customErrTag, "custom error logging")
 
-	glg.Info("kpango's glg supports disable timestamp for logging")
+	// glg.Info("kpango's glg supports disable timestamp for logging")
 	glg.Get().DisableTimestamp()
 	glg.Info("timestamp disabled")
 	glg.Warn("timestamp disabled")
