@@ -73,19 +73,20 @@ type logger struct {
 	color            func(string) string
 	isColor          bool
 	mode             MODE
+	prevMode         MODE
 	writeMode        wMode
 	disableTimestamp bool
 }
 
 const (
-	// LOG is log level
-	LOG LEVEL = iota
+	// DEBG is debug log level
+	DEBG LEVEL = iota + 1
 	// PRINT is print log level
 	PRINT
+	// LOG is log level
+	LOG
 	// INFO is info log level
 	INFO
-	// DEBG is debug log level
-	DEBG
 	// OK is success notify log level
 	OK
 	// WARN is warning log level
@@ -98,7 +99,7 @@ const (
 	FATAL
 
 	// NONE is disable Logging
-	NONE MODE = iota
+	NONE MODE = iota + 1
 	// STD is std log mode
 	STD
 	// BOTH is both log mode
@@ -107,7 +108,7 @@ const (
 	WRITER
 
 	// Internal writeMode
-	writeColorStd wMode = iota
+	writeColorStd wMode = iota + 1
 	writeStd
 	writeWriter
 	writeColorBoth
@@ -149,14 +150,14 @@ func init() {
 
 func (l LEVEL) String() string {
 	switch l {
-	case LOG:
-		return "LOG"
-	case PRINT:
-		return "PRINT"
-	case INFO:
-		return "INFO"
 	case DEBG:
 		return "DEBG"
+	case PRINT:
+		return "PRINT"
+	case LOG:
+		return "LOG"
+	case INFO:
+		return "INFO"
 	case OK:
 		return "OK"
 	case WARN:
@@ -208,6 +209,12 @@ func New() *Glg {
 
 	for lev, log := range map[LEVEL]*logger{
 		// standard out
+		DEBG: {
+			std:     os.Stdout,
+			color:   Purple,
+			isColor: true,
+			mode:    STD,
+		},
 		PRINT: {
 			std:     os.Stdout,
 			color:   Colorless,
@@ -223,12 +230,6 @@ func New() *Glg {
 		INFO: {
 			std:     os.Stdout,
 			color:   Green,
-			isColor: true,
-			mode:    STD,
-		},
-		DEBG: {
-			std:     os.Stdout,
-			color:   Purple,
 			isColor: true,
 			mode:    STD,
 		},
@@ -266,6 +267,7 @@ func New() *Glg {
 	} {
 		log.tag = lev.String()
 		log.rawtag = []byte(lsep + log.tag + sep)
+		log.prevMode = log.mode
 		log.updateMode()
 		g.logger.Store(lev, log)
 	}
@@ -299,10 +301,27 @@ func (g *Glg) EnablePoolBuffer(size int) *Glg {
 	return g
 }
 
+// SetLevel sets glg global log level
+func (g *Glg) SetLevel(lv LEVEL) *Glg {
+	g.logger.Range(func(lev LEVEL, l *logger) bool {
+		if lev < lv {
+			l.prevMode = l.mode
+			l.mode = NONE
+		} else {
+			l.mode = l.prevMode
+		}
+		l.updateMode()
+		g.logger.Store(lev, l)
+		return true
+	})
+	return g
+}
+
 // SetMode sets glg logging mode
 func (g *Glg) SetMode(mode MODE) *Glg {
 	g.logger.Range(func(lev LEVEL, l *logger) bool {
 		l.mode = mode
+		l.prevMode = mode
 		l.updateMode()
 		g.logger.Store(lev, l)
 		return true
@@ -316,6 +335,7 @@ func (g *Glg) SetLevelMode(level LEVEL, mode MODE) *Glg {
 	l, ok := g.logger.Load(level)
 	if ok {
 		l.mode = mode
+		l.prevMode = mode
 		l.updateMode()
 		g.logger.Store(level, l)
 	}
@@ -443,37 +463,27 @@ func (g *Glg) AddLevelWriter(level LEVEL, writer io.Writer) *Glg {
 
 // AddStdLevel adds std log level and returns LEVEL
 func (g *Glg) AddStdLevel(tag string, mode MODE, isColor bool) *Glg {
-	lev := LEVEL(atomic.AddUint32(g.levelCounter, 1))
-	tag = strings.ToUpper(tag)
-	g.levelMap.Store(tag, lev)
-	l := &logger{
-		writer:  nil,
-		std:     os.Stdout,
-		color:   Colorless,
-		isColor: isColor,
-		mode:    mode,
-		tag:     tag,
-		rawtag:  []byte(lsep + tag + sep),
-	}
-	l.updateMode()
-	g.logger.Store(lev, l)
-	return g
+	return g.addLevel(tag, mode, isColor, os.Stdout)
 }
 
 // AddErrLevel adds error log level and returns LEVEL
 func (g *Glg) AddErrLevel(tag string, mode MODE, isColor bool) *Glg {
-	atomic.AddUint32(g.levelCounter, 1)
-	lev := LEVEL(atomic.LoadUint32(g.levelCounter))
+	return g.addLevel(tag, mode, isColor, os.Stderr)
+}
+
+func (g *Glg) addLevel(tag string, mode MODE, isColor bool, std io.Writer) *Glg {
+	lev := LEVEL(atomic.AddUint32(g.levelCounter, 1))
 	tag = strings.ToUpper(tag)
 	g.levelMap.Store(tag, lev)
 	l := &logger{
-		writer:  nil,
-		std:     os.Stderr,
-		color:   Red,
-		isColor: isColor,
-		mode:    mode,
-		tag:     tag,
-		rawtag:  []byte(lsep + tag + sep),
+		writer:   nil,
+		std:      std,
+		color:    Colorless,
+		isColor:  isColor,
+		mode:     mode,
+		prevMode: mode,
+		tag:      tag,
+		rawtag:   []byte(lsep + tag + sep),
 	}
 	l.updateMode()
 	g.logger.Store(lev, l)

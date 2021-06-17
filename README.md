@@ -100,6 +100,15 @@ func main() {
 	glg.Print("Print")
 	glg.Println("Println")
 	glg.Printf("%s : %s", "printf", "formatted")
+
+	// set global log level to ERR level
+	glg.Info("before setting level to ERR this message will show")
+	glg.Get().SetLevel(glg.ERR)
+	glg.Info("after setting level to ERR this message will not show")
+	glg.Error("this log is ERR level this will show")
+	glg.Get().SetLevel(glg.DEBG)
+	glg.Info("log level is now DEBG, this INFO level log will show")
+
 	glg.CustomLog(customTag, "custom logging")
 	glg.CustomLog(customErrTag, "custom error logging")
 
