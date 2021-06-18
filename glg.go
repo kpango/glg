@@ -27,6 +27,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -81,6 +82,8 @@ type logger struct {
 const (
 	// DEBG is debug log level
 	DEBG LEVEL = iota + 1
+	// TRACE is trace log level
+	TRACE
 	// PRINT is print log level
 	PRINT
 	// LOG is log level
@@ -97,6 +100,9 @@ const (
 	FAIL
 	// FATAL is fatal log level
 	FATAL
+
+	// UNKNOWN is unknown log level
+	UNKNOWN LEVEL = LEVEL(math.MaxUint8)
 
 	// NONE is disable Logging
 	NONE MODE = iota + 1
@@ -152,6 +158,8 @@ func (l LEVEL) String() string {
 	switch l {
 	case DEBG:
 		return "DEBG"
+	case TRACE:
+		return "TRACE"
 	case PRINT:
 		return "PRINT"
 	case LOG:
@@ -212,6 +220,12 @@ func New() *Glg {
 		DEBG: {
 			std:     os.Stdout,
 			color:   Purple,
+			isColor: true,
+			mode:    STD,
+		},
+		TRACE: {
+			std:     os.Stdout,
+			color:   Yellow,
 			isColor: true,
 			mode:    STD,
 		},
@@ -589,14 +603,46 @@ func RawString(data []byte) string {
 	return glg.RawString(data)
 }
 
+// Atol converts level string to Glg.LEVEL
+func (g *Glg) Atol(tag string) LEVEL {
+	return g.TagStringToLevel(tag)
+}
+
+// Atol converts level string to Glg.LEVEL
+func Atol(tag string) LEVEL {
+	return glg.TagStringToLevel(tag)
+}
+
 // TagStringToLevel converts level string to Glg.LEVEL
 func (g *Glg) TagStringToLevel(tag string) LEVEL {
-	tag = strings.ToUpper(tag)
+	tag = strings.TrimSpace(strings.ToUpper(tag))
 	lv, ok := g.levelMap.Load(tag)
-	if !ok {
-		return 255
+	if ok {
+		return lv
 	}
-	return lv
+	switch tag {
+	case DEBG.String(), "DBG", "DEBUG", "D":
+		return DEBG
+	case TRACE.String(), "TRC", "TRA", "TR", "T":
+		return TRACE
+	case PRINT.String(), "PRINT", "PNT", "P":
+		return PRINT
+	case LOG.String(), "LO", "LG", "L":
+		return LOG
+	case INFO.String(), "IFO", "INF", "I":
+		return INFO
+	case OK.String(), "O", "K":
+		return OK
+	case WARN.String(), "WARNING", "WRN", "W":
+		return WARN
+	case ERR.String(), "ERROR", "ER", "E":
+		return ERR
+	case FAIL.String(), "FAILED", "FI":
+		return FAIL
+	case FATAL.String(), "FAT", "FL", "F":
+		return FATAL
+	}
+	return UNKNOWN
 }
 
 // TagStringToLevel converts level string to glg.LEVEL
@@ -1033,6 +1079,42 @@ func CustomLogFunc(level string, f func() string) error {
 	lv := TagStringToLevel(level)
 	if isModeEnable(lv) {
 		return glg.out(lv, "%s", f())
+	}
+	return nil
+}
+
+// Trace outputs Trace level log
+func (g *Glg) Trace(val ...interface{}) error {
+	return g.out(TRACE, g.blankFormat(len(val)), val...)
+}
+
+// Tracef outputs formatted Trace level log
+func (g *Glg) Tracef(format string, val ...interface{}) error {
+	return g.out(TRACE, format, val...)
+}
+
+// TraceFunc outputs Trace level log returned from the function
+func (g *Glg) TraceFunc(f func() string) error {
+	if g.isModeEnable(TRACE) {
+		return g.out(TRACE, "%s", f())
+	}
+	return nil
+}
+
+// Trace outputs Trace level log
+func Trace(val ...interface{}) error {
+	return glg.out(TRACE, glg.blankFormat(len(val)), val...)
+}
+
+// Tracef outputs formatted Trace level log
+func Tracef(format string, val ...interface{}) error {
+	return glg.out(TRACE, format, val...)
+}
+
+// TraceFunc outputs Trace log returned from the function
+func TraceFunc(f func() string) error {
+	if isModeEnable(TRACE) {
+		return glg.out(TRACE, "%s", f())
 	}
 	return nil
 }
