@@ -74,7 +74,7 @@ func testExit(code int, f func()) (err error) {
 }
 
 func TestLEVEL_String(t *testing.T) {
-	l := LEVEL(10)
+	l := LEVEL(100)
 	if l.String() != "" {
 		t.Error("invalid value")
 	}
@@ -894,7 +894,7 @@ func TestTagStringToLevel(t *testing.T) {
 			name:      "customTag No create",
 			g:         Get(),
 			tag:       "customTagFail",
-			want:      255,
+			want:      UNKNOWN,
 			createFlg: false,
 		},
 	}
@@ -930,7 +930,7 @@ func TestGlg_TagStringToLevel(t *testing.T) {
 			name:      "customTag No create",
 			g:         New(),
 			tag:       "customTagFail",
-			want:      255,
+			want:      UNKNOWN,
 			createFlg: false,
 		},
 	}
@@ -2891,6 +2891,222 @@ func TestCustomLogFunc(t *testing.T) {
 	}
 }
 
+func TestGlg_Trace(t *testing.T) {
+	tests := []struct {
+		name string
+		val  []interface{}
+	}{
+		{
+			name: "sample trace",
+			val: []interface{}{
+				"sample trace",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			err := g.Trace(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Trace() unexpected error: %v", err)
+			}
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Trace() = got %v want %v", buf.String(), want)
+			}
+		})
+	}
+}
+
+func TestGlg_Tracef(t *testing.T) {
+	tests := []struct {
+		name   string
+		format string
+		val    []interface{}
+	}{
+		{
+			name:   "sample tracef",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample tracef",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			g := New().SetMode(WRITER).SetWriter(buf)
+			err := g.Tracef(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Glg.Tracef() unexpected error: %v", err)
+			}
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Glg.Tracef() = got %v want %v", buf.String(), want)
+			}
+		})
+	}
+}
+
+func TestGlg_TraceFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return dummy
+			},
+			want: dummy,
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return dummy
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			g := New().SetMode(tt.logMode).SetWriter(buf)
+			err := g.TraceFunc(tt.f)
+			if err != nil {
+				t.Errorf("Glg.TraceFunc() unexpected error: %v", err)
+			}
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("Glg.TraceFunc() = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
+
+func TestTrace(t *testing.T) {
+	tests := []struct {
+		name string
+		val  []interface{}
+	}{
+		{
+			name: "sample trace",
+			val: []interface{}{
+				"sample trace",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			err := Trace(tt.val...)
+			want := fmt.Sprintf("%v", tt.val...)
+			if err != nil {
+				t.Errorf("Trace() unexpected error: %v", err)
+			}
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Trace() = got %v want %v", buf.String(), want)
+			}
+		})
+	}
+}
+
+func TestTracef(t *testing.T) {
+	tests := []struct {
+		name   string
+		format string
+		val    []interface{}
+	}{
+		{
+			name:   "sample tracef",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+		{
+			name:   "sample tracef",
+			format: "%d%s%f",
+			val: []interface{}{
+				2,
+				"aaa",
+				3.6,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			Get().SetMode(WRITER).SetWriter(buf)
+			err := Tracef(tt.format, tt.val...)
+			want := fmt.Sprintf(tt.format, tt.val...)
+			if err != nil {
+				t.Errorf("Tracef() unexpected error: %v", err)
+			}
+			if !strings.Contains(buf.String(), want) {
+				t.Errorf("Tracef() = got %v want %v", buf.String(), want)
+			}
+		})
+	}
+}
+
+func TestTraceFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		logMode MODE
+		f       func() string
+		want    string
+	}{
+		{
+			name:    "sample log",
+			logMode: WRITER,
+			f: func() string {
+				return dummy
+			},
+			want: dummy,
+		},
+		{
+			name:    "sample log",
+			logMode: NONE,
+			f: func() string {
+				return dummy
+			},
+			want: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			Get().SetMode(tt.logMode).SetWriter(buf)
+			err := TraceFunc(tt.f)
+			if err != nil {
+				t.Errorf("TraceFunc() unexpected error: %v", err)
+			}
+			if !strings.Contains(buf.String(), tt.want) {
+				t.Errorf("TraceFunc() = got %v want %v", buf.String(), tt.want)
+			}
+		})
+	}
+}
+
 func TestGlg_Print(t *testing.T) {
 	tests := []struct {
 		name string
@@ -3835,7 +4051,7 @@ func TestReset(t *testing.T) {
 			name: "reset",
 			tag:  "glg",
 			g:    Reset(),
-			want: 255,
+			want: UNKNOWN,
 		},
 	}
 	for _, tt := range tests {
@@ -3861,7 +4077,7 @@ func TestGlg_Reset(t *testing.T) {
 			name: "reset",
 			tag:  "glg",
 			g:    Get().Reset(),
-			want: 255,
+			want: UNKNOWN,
 		},
 	}
 	for _, tt := range tests {
@@ -4346,6 +4562,120 @@ func TestGlg_isModeEnable(t *testing.T) {
 			}
 			if got := g.isModeEnable(tt.args.l); got != tt.want {
 				t.Errorf("Glg.isModeEnable() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAtol(t *testing.T) {
+	tests := []struct {
+		name      string
+		g         *Glg
+		tag       string
+		want      LEVEL
+		createFlg bool
+	}{
+		{
+			name:      "customTag",
+			g:         Get().Reset(),
+			tag:       "customTag",
+			want:      Atol("customTag"),
+			createFlg: true,
+		},
+		{
+			name:      "D returns DEBG",
+			g:         Get().Reset(),
+			tag:       "D",
+			want:      DEBG,
+			createFlg: false,
+		},
+		{
+			name:      "debug return DEBG",
+			g:         Get().Reset(),
+			tag:       "debug",
+			want:      DEBG,
+			createFlg: false,
+		},
+		{
+			name:      "info return INFO",
+			g:         Get().Reset(),
+			tag:       "info",
+			want:      INFO,
+			createFlg: false,
+		},
+		{
+			name:      "customTag No create",
+			g:         Get(),
+			tag:       "customTagFail",
+			want:      UNKNOWN,
+			createFlg: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.createFlg {
+				tt.g.AddStdLevel(tt.tag, STD, false)
+			}
+			got := Atol(tt.tag)
+			if got != tt.want {
+				t.Errorf("Glg.Atol = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestGlg_Atol(t *testing.T) {
+	tests := []struct {
+		name      string
+		g         *Glg
+		tag       string
+		want      LEVEL
+		createFlg bool
+	}{
+		{
+			name:      "customTag",
+			g:         Get().Reset(),
+			tag:       "customTag",
+			want:      Atol("customTag"),
+			createFlg: true,
+		},
+		{
+			name:      "D returns DEBG",
+			g:         Get().Reset(),
+			tag:       "D",
+			want:      DEBG,
+			createFlg: false,
+		},
+		{
+			name:      "debug return DEBG",
+			g:         Get().Reset(),
+			tag:       "debug",
+			want:      DEBG,
+			createFlg: false,
+		},
+		{
+			name:      "info return INFO",
+			g:         Get().Reset(),
+			tag:       "info",
+			want:      INFO,
+			createFlg: false,
+		},
+		{
+			name:      "customTag No create",
+			g:         Get(),
+			tag:       "customTagFail",
+			want:      UNKNOWN,
+			createFlg: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.createFlg {
+				tt.g.AddStdLevel(tt.tag, STD, false)
+			}
+			got := glg.Atol(tt.tag)
+			if got != tt.want {
+				t.Errorf("Glg.Atol = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -130,6 +130,8 @@ func main() {
 	glg.Logf("%s : %s", "info", "formatted")
 	glg.Debug("debug")
 	glg.Debugf("%s : %s", "info", "formatted")
+	glg.Trace("Trace")
+	glg.Tracef("%s : %s", "tracef", "formatted")
 	glg.Warn("warn")
 	glg.Warnf("%s : %s", "info", "formatted")
 	glg.Error("error")
