@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	"github.com/kpango/glg"
+	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -97,7 +98,7 @@ func BenchmarkDefaultLog(b *testing.B) {
 
 func BenchmarkGlg(b *testing.B) {
 	glg.Reset()
-	glg.Get().SetMode(glg.WRITER).SetWriter(&MockWriter{}).EnablePoolBuffer(100)
+	glg.Get().SetMode(glg.WRITER).SetWriter(&MockWriter{}).EnablePoolBuffer(32)
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -107,6 +108,21 @@ func BenchmarkGlg(b *testing.B) {
 			glg.Log(testMsg)
 			glg.Log(testMsg)
 			glg.Log(testMsg)
+		}
+	})
+}
+
+func BenchmarkLogrus(b *testing.B) {
+	logrus.SetOutput(&MockWriter{})
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logrus.Info(testMsg)
+			logrus.Info(testMsg)
+			logrus.Info(testMsg)
+			logrus.Info(testMsg)
+			logrus.Info(testMsg)
 		}
 	})
 }
@@ -144,7 +160,7 @@ func BenchmarkDefaultLogf(b *testing.B) {
 
 func BenchmarkGlgf(b *testing.B) {
 	glg.Reset()
-	glg.Get().SetMode(glg.WRITER).SetWriter(&MockWriter{}).EnablePoolBuffer(100)
+	glg.Get().SetMode(glg.WRITER).SetWriter(&MockWriter{}).EnablePoolBuffer(32)
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -154,6 +170,21 @@ func BenchmarkGlgf(b *testing.B) {
 			glg.Logf(testFormat, testMsg, testInt, testFloat)
 			glg.Logf(testFormat, testMsg, testInt, testFloat)
 			glg.Logf(testFormat, testMsg, testInt, testFloat)
+		}
+	})
+}
+
+func BenchmarkLogrusf(b *testing.B) {
+	logrus.SetOutput(&MockWriter{})
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logrus.Infof(testFormat, testMsg, testInt, testFloat)
+			logrus.Infof(testFormat, testMsg, testInt, testFloat)
+			logrus.Infof(testFormat, testMsg, testInt, testFloat)
+			logrus.Infof(testFormat, testMsg, testInt, testFloat)
+			logrus.Infof(testFormat, testMsg, testInt, testFloat)
 		}
 	})
 }
@@ -176,7 +207,7 @@ func BenchmarkZapf(b *testing.B) {
 
 func BenchmarkGlgJSON(b *testing.B) {
 	glg.Reset()
-	glg.Get().SetMode(glg.WRITER).SetWriter(&MockWriter{}).EnablePoolBuffer(100).EnableJSON()
+	glg.Get().SetMode(glg.WRITER).SetWriter(&MockWriter{}).EnablePoolBuffer(32).EnableJSON()
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -186,6 +217,22 @@ func BenchmarkGlgJSON(b *testing.B) {
 			glg.Log(testJSON)
 			glg.Log(testJSON)
 			glg.Log(testJSON)
+		}
+	})
+}
+
+func BenchmarkLogrusJSON(b *testing.B) {
+	logrus.SetOutput(&MockWriter{})
+	logrus.SetFormatter(&logrus.JSONFormatter{})
+	b.ReportAllocs()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			logrus.Info(testJSON)
+			logrus.Info(testJSON)
+			logrus.Info(testJSON)
+			logrus.Info(testJSON)
+			logrus.Info(testJSON)
 		}
 	})
 }

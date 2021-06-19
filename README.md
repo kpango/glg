@@ -18,7 +18,7 @@
 glg is simple golang logging library
 
 ## Requirement
-Go 1.1
+Go 1.16
 
 ## Installation
 ```shell
