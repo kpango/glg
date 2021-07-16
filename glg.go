@@ -69,6 +69,8 @@ type LEVEL uint8
 
 type wMode uint8
 
+type traceMode int64
+
 type logger struct {
 	tag              string
 	rawtag           []byte
@@ -76,7 +78,7 @@ type logger struct {
 	std              io.Writer
 	color            func(string) string
 	isColor          bool
-	flag             int
+	traceMode        traceMode
 	mode             MODE
 	prevMode         MODE
 	writeMode        wMode
@@ -145,10 +147,9 @@ const (
 	sep   = "]:" + tab
 	sepl  = len(sep)
 
-	// LTraceLine is flags for tracing log line
-	LTraceLineNone = 1 << iota
-	LTraceLineShort
-	LTraceLineLong
+	TraceLineNone traceMode = 1 << iota
+	TraceLineShort
+	TraceLineLong
 )
 
 var (
@@ -227,75 +228,75 @@ func New() *Glg {
 	for lev, log := range map[LEVEL]*logger{
 		// standard out
 		DEBG: {
-			std:     os.Stdout,
-			color:   Purple,
-			isColor: true,
-			mode:    STD,
-			flag:    LTraceLineNone,
+			std:       os.Stdout,
+			color:     Purple,
+			isColor:   true,
+			mode:      STD,
+			traceMode: TraceLineNone,
 		},
 		TRACE: {
-			std:     os.Stdout,
-			color:   Yellow,
-			isColor: true,
-			mode:    STD,
-			flag:    LTraceLineNone,
+			std:       os.Stdout,
+			color:     Yellow,
+			isColor:   true,
+			mode:      STD,
+			traceMode: TraceLineNone,
 		},
 		PRINT: {
-			std:     os.Stdout,
-			color:   Colorless,
-			isColor: true,
-			mode:    STD,
-			flag:    LTraceLineNone,
+			std:       os.Stdout,
+			color:     Colorless,
+			isColor:   true,
+			mode:      STD,
+			traceMode: TraceLineNone,
 		},
 		LOG: {
-			std:     os.Stdout,
-			color:   Colorless,
-			isColor: true,
-			mode:    STD,
-			flag:    LTraceLineNone,
+			std:       os.Stdout,
+			color:     Colorless,
+			isColor:   true,
+			mode:      STD,
+			traceMode: TraceLineNone,
 		},
 		INFO: {
-			std:     os.Stdout,
-			color:   Green,
-			isColor: true,
-			mode:    STD,
-			flag:    LTraceLineNone,
+			std:       os.Stdout,
+			color:     Green,
+			isColor:   true,
+			mode:      STD,
+			traceMode: TraceLineNone,
 		},
 		OK: {
-			std:     os.Stdout,
-			color:   Cyan,
-			isColor: true,
-			mode:    STD,
-			flag:    LTraceLineNone,
+			std:       os.Stdout,
+			color:     Cyan,
+			isColor:   true,
+			mode:      STD,
+			traceMode: TraceLineNone,
 		},
 		WARN: {
-			std:     os.Stdout,
-			color:   Orange,
-			isColor: true,
-			mode:    STD,
-			flag:    LTraceLineNone,
+			std:       os.Stdout,
+			color:     Orange,
+			isColor:   true,
+			mode:      STD,
+			traceMode: TraceLineNone,
 		},
 		// error out
 		ERR: {
-			std:     os.Stderr,
-			color:   Red,
-			isColor: true,
-			mode:    STD,
-			flag:    LTraceLineShort,
+			std:       os.Stderr,
+			color:     Red,
+			isColor:   true,
+			mode:      STD,
+			traceMode: TraceLineShort,
 		},
 		FAIL: {
-			std:     os.Stderr,
-			color:   Red,
-			isColor: true,
-			mode:    STD,
-			flag:    LTraceLineShort,
+			std:       os.Stderr,
+			color:     Red,
+			isColor:   true,
+			mode:      STD,
+			traceMode: TraceLineShort,
 		},
 		FATAL: {
-			std:     os.Stderr,
-			color:   Red,
-			isColor: true,
-			mode:    STD,
-			flag:    LTraceLineLong,
+			std:       os.Stderr,
+			color:     Red,
+			isColor:   true,
+			mode:      STD,
+			traceMode: TraceLineLong,
 		},
 	} {
 		log.tag = lev.String()
@@ -565,21 +566,21 @@ func (g *Glg) DisableLevelTimestamp(lv LEVEL) *Glg {
 	return g
 }
 
-// SetTraceLineFlag configures output line traceFlag
-func (g *Glg) SetTraceLineFlag(flg int) *Glg {
+// SetLineTraceMode configures output line traceFlag
+func (g *Glg) SetLineTraceMode(mode traceMode) *Glg {
 	g.logger.Range(func(lev LEVEL, l *logger) bool {
-		l.flag = flg
+		l.traceMode = mode
 		g.logger.Store(lev, l)
 		return true
 	})
 	return g
 }
 
-// SetLevelTraceLineFlag configures output line traceFlag
-func (g *Glg) SetLevelTraceLineFlag(lv LEVEL, flg int) *Glg {
+// SetLevelLineTraceMode configures output line traceFlag
+func (g *Glg) SetLevelLineTraceMode(lv LEVEL, mode traceMode) *Glg {
 	l, ok := g.logger.Load(lv)
 	if ok {
-		l.flag = flg
+		l.traceMode = mode
 		g.logger.Store(lv, l)
 	}
 	return g
@@ -826,12 +827,12 @@ func (g *Glg) out(level LEVEL, calldepth int, format string, val ...interface{})
 	}
 
 	var fl string
-	if log.flag&(LTraceLineLong|LTraceLineShort) != 0 {
+	if log.traceMode&(TraceLineLong|TraceLineShort) != 0 {
 		_, file, line, ok := runtime.Caller(calldepth)
 		switch {
 		case !ok:
 			fl = "???:0"
-		case log.flag&LTraceLineShort != 0:
+		case log.traceMode&TraceLineShort != 0:
 			for i := len(file) - 1; i > 0; i-- {
 				if file[i] == '/' {
 					file = file[i+1:]

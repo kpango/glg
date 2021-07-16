@@ -120,6 +120,7 @@ func main() {
 		// SetLevelWriter(glg.WARN, customWriter).
 		// SetLevelWriter(glg.ERR, customWriter).
 		// EnableJSON().
+		SetLineTraceMode(glg.TraceLineNone).
 		AddLevelWriter(glg.INFO, infolog). // add info log file destination
 		AddLevelWriter(glg.ERR, errlog).   // add error log file destination
 		AddLevelWriter(glg.WARN, rotate)   // add error log file destination
@@ -173,23 +174,30 @@ func main() {
 	glg.Info("kpango's glg support line trace logging")
 	glg.Error("error log shows short line trace by default")
 	glg.Info("error log shows none trace by default")
-	glg.Get().SetTraceLineFlag(glg.LTraceLineShort)
-	glg.Error("after configure LTraceLineShort, error log shows short line trace")
-	glg.Info("after configure LTraceLineShort, info log shows short line trace")
+	glg.Get().SetLineTraceMode(glg.TraceLineShort)
+	glg.Error("after configure TraceLineShort, error log shows short line trace")
+	glg.Info("after configure TraceLineShort, info log shows short line trace")
 	glg.Get().DisableTimestamp()
-	glg.Error("after configure LTraceLineShort and DisableTimestamp, error log shows short line trace without timestamp")
-	glg.Info("after configure LTraceLineShort and DisableTimestamp, info log shows short line trace without timestamp")
+	glg.Error("after configure TraceLineShort and DisableTimestamp, error log shows short line trace without timestamp")
+	glg.Info("after configure TraceLineShort and DisableTimestamp, info log shows short line trace without timestamp")
 	glg.Get().EnableTimestamp()
-
-	glg.Get().SetTraceLineFlag(glg.LTraceLineLong)
-	glg.Error("after configure LTraceLineLong, error log shows long line trace")
-	glg.Info("after configure LTraceLineLong, info log shows long line trace")
+	glg.Get().SetLineTraceMode(glg.TraceLineLong)
+	glg.Error("after configure TraceLineLong, error log shows long line trace")
+	glg.Info("after configure TraceLineLong, info log shows long line trace")
 	glg.Get().DisableTimestamp()
-	glg.Error("after configure LTraceLineLong and DisableTimestamp, error log shows long line trace without timestamp")
-	glg.Info("after configure LTraceLineLong and DisableTimestamp, info log shows long line trace without timestamp")
+	glg.Error("after configure TraceLineLong and DisableTimestamp, error log shows long line trace without timestamp")
+	glg.Info("after configure TraceLineLong and DisableTimestamp, info log shows long line trace without timestamp")
 	glg.Get().EnableTimestamp()
-	glg.Get().SetTraceLineFlag(glg.LTraceLineNone)
-	glg.Error("after configure LTraceLineNone, error log shows long line trace")
+	glg.Get().SetLineTraceMode(glg.TraceLineNone)
+	glg.Error("after configure TraceLineNone, error log without line trace")
+	glg.Info("after configure TraceLineNone, info log without line trace")
+	glg.Get().SetLevelLineTraceMode(glg.INFO, glg.TraceLineLong)
+	glg.Info("after configure Level trace INFO=TraceLineLong, only info log shows long line trace")
+	glg.Error("after configure Level trace INFO=TraceLineLong, error log without long line trace")
+	glg.Get().SetLevelLineTraceMode(glg.ERR, glg.TraceLineShort)
+	glg.Info("after configure Level trace ERR=TraceLineShort, info log still shows long line trace")
+	glg.Error("after configure Level trace ERR=TraceLineShort, error log now shows short line trace")
+	glg.Get().SetLineTraceMode(glg.TraceLineNone)
 
 	glg.Info("kpango's glg support json logging")
 	glg.Get().EnableJSON()
