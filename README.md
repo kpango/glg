@@ -59,6 +59,7 @@ func main() {
 	errlog := glg.FileWriter("/tmp/error.log", 0666)
 	defer infolog.Close()
 	defer errlog.Close()
+
 	glg.Get().
 		SetMode(glg.BOTH). // default is STD
 		// DisableColor().
@@ -76,29 +77,28 @@ func main() {
 		// SetLevelWriter(glg.INFO, customWriter).
 		// SetLevelWriter(glg.WARN, customWriter).
 		// SetLevelWriter(glg.ERR, customWriter).
-		AddLevelWriter(glg.INFO, infolog).                         // add info log file destination
-		AddLevelWriter(glg.ERR, errlog).                           // add error log file destination
-		AddStdLevel(customTag, glg.STD, false).                    //user custom log level
-		AddErrLevel(customErrTag, glg.STD, true).                  // user custom error log level
-		SetLevelColor(glg.TagStringToLevel(customTag), glg.Cyan).  // set color output to user custom level
-		SetLevelColor(glg.TagStringToLevel(customErrTag), glg.Red) // set color output to user custom level
+		// EnableJSON().
+		SetLineTraceMode(glg.TraceLineNone).
+		AddLevelWriter(glg.INFO, infolog). // add info log file destination
+		AddLevelWriter(glg.ERR, errlog).   // add error log file destination
+		AddLevelWriter(glg.WARN, rotate)   // add error log file destination
 
 	glg.Info("info")
 	glg.Infof("%s : %s", "info", "formatted")
 	glg.Log("log")
-	glg.Logf("%s : %s", "log", "formatted")
+	glg.Logf("%s : %s", "info", "formatted")
 	glg.Debug("debug")
-	glg.Debugf("%s : %s", "debug", "formatted")
-	glg.Trace("trace")
-	glg.Tracef("%s : %s", "trace", "formatted")
+	glg.Debugf("%s : %s", "info", "formatted")
+	glg.Trace("Trace")
+	glg.Tracef("%s : %s", "tracef", "formatted")
 	glg.Warn("warn")
-	glg.Warnf("%s : %s", "warn", "formatted")
+	glg.Warnf("%s : %s", "info", "formatted")
 	glg.Error("error")
-	glg.Errorf("%s : %s", "error", "formatted")
+	glg.Errorf("%s : %s", "info", "formatted")
 	glg.Success("ok")
-	glg.Successf("%s : %s", "ok", "formatted")
+	glg.Successf("%s : %s", "info", "formatted")
 	glg.Fail("fail")
-	glg.Failf("%s : %s", "fail", "formatted")
+	glg.Failf("%s : %s", "info", "formatted")
 	glg.Print("Print")
 	glg.Println("Println")
 	glg.Printf("%s : %s", "printf", "formatted")
@@ -111,7 +111,75 @@ func main() {
 	glg.Get().SetLevel(glg.DEBG)
 	glg.Info("log level is now DEBG, this INFO level log will show")
 
+	glg.Get().
+		AddStdLevel(customTag, glg.STD, false).                    // user custom log level
+		AddErrLevel(customErrTag, glg.STD, true).                  // user custom error log level
+		SetLevelColor(glg.TagStringToLevel(customTag), glg.Cyan).  // set color output to user custom level
+		SetLevelColor(glg.TagStringToLevel(customErrTag), glg.Red) // set color output to user custom level
 	glg.CustomLog(customTag, "custom logging")
+	glg.CustomLog(customErrTag, "custom error logging")
+
+	// glg.Info("kpango's glg supports disable timestamp for logging")
+	glg.Get().DisableTimestamp()
+	glg.Info("timestamp disabled")
+	glg.Warn("timestamp disabled")
+	glg.Log("timestamp disabled")
+	glg.Get().EnableTimestamp()
+	glg.Info("timestamp enabled")
+	glg.Warn("timestamp enabled")
+	glg.Log("timestamp enabled")
+
+	glg.Info("kpango's glg support line trace logging")
+	glg.Error("error log shows short line trace by default")
+	glg.Info("error log shows none trace by default")
+	glg.Get().SetLineTraceMode(glg.TraceLineShort)
+	glg.Error("after configure TraceLineShort, error log shows short line trace")
+	glg.Info("after configure TraceLineShort, info log shows short line trace")
+	glg.Get().DisableTimestamp()
+	glg.Error("after configure TraceLineShort and DisableTimestamp, error log shows short line trace without timestamp")
+	glg.Info("after configure TraceLineShort and DisableTimestamp, info log shows short line trace without timestamp")
+	glg.Get().EnableTimestamp()
+	glg.Get().SetLineTraceMode(glg.TraceLineLong)
+	glg.Error("after configure TraceLineLong, error log shows long line trace")
+	glg.Info("after configure TraceLineLong, info log shows long line trace")
+	glg.Get().DisableTimestamp()
+	glg.Error("after configure TraceLineLong and DisableTimestamp, error log shows long line trace without timestamp")
+	glg.Info("after configure TraceLineLong and DisableTimestamp, info log shows long line trace without timestamp")
+	glg.Get().EnableTimestamp()
+	glg.Get().SetLineTraceMode(glg.TraceLineNone)
+	glg.Error("after configure TraceLineNone, error log without line trace")
+	glg.Info("after configure TraceLineNone, info log without line trace")
+	glg.Get().SetLevelLineTraceMode(glg.INFO, glg.TraceLineLong)
+	glg.Info("after configure Level trace INFO=TraceLineLong, only info log shows long line trace")
+	glg.Error("after configure Level trace INFO=TraceLineLong, error log without long line trace")
+	glg.Get().SetLevelLineTraceMode(glg.ERR, glg.TraceLineShort)
+	glg.Info("after configure Level trace ERR=TraceLineShort, info log still shows long line trace")
+	glg.Error("after configure Level trace ERR=TraceLineShort, error log now shows short line trace")
+	glg.Get().SetLineTraceMode(glg.TraceLineNone)
+
+	glg.Info("kpango's glg support json logging")
+	glg.Get().EnableJSON()
+	err := glg.Warn("kpango's glg", "support", "json", "logging")
+	if err != nil {
+		glg.Get().DisableJSON()
+		glg.Error(err)
+		glg.Get().EnableJSON()
+	}
+	err = glg.Info("hello", struct {
+		Name   string
+		Age    int
+		Gender string
+	}{
+		Name:   "kpango",
+		Age:    28,
+		Gender: "male",
+	}, 2020)
+	if err != nil {
+		glg.Get().DisableJSON()
+		glg.Error(err)
+		glg.Get().EnableJSON()
+	}	glg.CustomLog(customTag, "custom logging")
+
 	glg.CustomLog(customErrTag, "custom error logging")
 
 	glg.Get().AddLevelWriter(glg.DEBG, NetWorkLogger{}) // add info log file destination
