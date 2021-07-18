@@ -1561,7 +1561,7 @@ func TestGlg_out(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			buf := new(bytes.Buffer)
 			g := tt.glg.SetWriter(buf)
-			g.out(tt.level, 2, tt.format, tt.val...)
+			g.out(tt.level, tt.format, tt.val...)
 			want := fmt.Sprintf(tt.format, tt.val...)
 			if !strings.Contains(buf.String(), want) && tt.glg.GetCurrentMode(LOG) != NONE && tt.glg.GetCurrentMode(LOG) != STD {
 				t.Errorf("Glg.out() = got %v want %v", buf.String(), want)
