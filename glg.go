@@ -868,6 +868,17 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 				fl += "/" + path
 			}
 			fl += "#L" + strconv.Itoa(line)
+		case strings.Contains(file, "go/src"):
+			fl = "https:/"
+			cnt := 0
+			for _, path := range strings.Split(strings.SplitN(file, "go/src/", 2)[1], "/") {
+				if cnt == 3 {
+					path = "blob/master/" + path
+				}
+				fl += "/" + path
+				cnt++
+			}
+			fl += "#L" + strconv.Itoa(line)
 		default:
 			fl = file + ":" + strconv.Itoa(line)
 		}
