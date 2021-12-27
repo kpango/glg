@@ -128,13 +128,11 @@ const (
 	writeBoth
 	none
 
-	// Default Format
-	df = "%v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v " +
-		"%v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v " +
-		"%v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v " +
-		"%v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v %v "
-
-	dfl = len(df) / 3
+	// Default Word
+	spw  = " "
+	spwl = len(spw)
+	dw   = "%v" + spw
+	dwl  = len(dw)
 
 	timeFormat = "2006-01-02 15:04:05"
 
@@ -156,6 +154,10 @@ const (
 )
 
 var (
+	// Default Format
+	df  = strings.Repeat(dw, 50)
+	dfl = len(df) / dwl
+
 	glg  *Glg
 	once sync.Once
 
@@ -1415,13 +1417,13 @@ func (g *Glg) blankFormat(l int) string {
 		return ""
 	}
 	if dfl > l {
-		return df[:l*3-1]
+		return df[:l*dwl-spwl]
 	}
 	format := df
 	for c := l / dfl; c >= 0; c-- {
 		format += df
 	}
-	return format[:l*3-1]
+	return format[:l*dwl-spwl]
 }
 
 // isModeEnable returns the level has already turned on the logging
