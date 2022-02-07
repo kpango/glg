@@ -19,7 +19,7 @@ bench: clean init
 	go test -count=5 -run=NONE -bench . -benchmem
 
 init:
-	go mod init
+	cp go.mod.default go.mod
 	go mod tidy
 	sleep 3
 

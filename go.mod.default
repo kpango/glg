@@ -1,0 +1,36 @@
+module github.com/kpango/glg
+
+go 1.17
+
+replace(
+	github.com/benbjohnson/clock => github.com/benbjohnson/clock latest
+	github.com/davecgh/go-spew => github.com/davecgh/go-spew latest
+	github.com/goccy/go-json => github.com/goccy/go-json latest
+	github.com/kpango/fastime => github.com/kpango/fastime latest
+	github.com/kr/pretty => github.com/kr/pretty latest
+	github.com/kr/pty => github.com/kr/pty latest
+	github.com/kr/text => github.com/kr/text latest
+	github.com/pkg/errors => github.com/pkg/errors latest
+	github.com/pmezard/go-difflib => github.com/pmezard/go-difflib latest
+	github.com/sirupsen/logrus => github.com/sirupsen/logrus latest
+	github.com/stretchr/objx => github.com/stretchr/objx latest
+	github.com/stretchr/testify => github.com/stretchr/testify latest
+	github.com/yuin/goldmark => github.com/yuin/goldmark latest
+	golang.org/x/crypto => golang.org/x/crypto latest
+	golang.org/x/lint => golang.org/x/lint latest
+	golang.org/x/mod => golang.org/x/mod latest
+	golang.org/x/net => golang.org/x/net latest
+	golang.org/x/sync => golang.org/x/sync latest
+	golang.org/x/sys => golang.org/x/sys latest
+	golang.org/x/term => golang.org/x/term latest
+	golang.org/x/text => golang.org/x/text latest
+	golang.org/x/tools => golang.org/x/tools latest
+	golang.org/x/xerrors => golang.org/x/xerrors latest
+	gopkg.in/check.v1 => gopkg.in/check.v1 latest
+	gopkg.in/yaml.v2 => gopkg.in/yaml.v2 latest
+	gopkg.in/yaml.v3 => gopkg.in/yaml.v3 latest
+	go.uber.org/atomic => go.uber.org/atomic latest
+	go.uber.org/goleak => go.uber.org/goleak latest
+	go.uber.org/multierr => go.uber.org/multierr latest
+	go.uber.org/zap => go.uber.org/zap latest
+)
