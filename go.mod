@@ -4,9 +4,9 @@ go 1.17
 
 require (
 	github.com/goccy/go-json v0.9.4
-	github.com/kpango/fastime v1.0.18
+	github.com/kpango/fastime v1.1.0
 	github.com/sirupsen/logrus v1.8.1
-	go.uber.org/zap v1.20.0
+	go.uber.org/zap v1.21.0
 )
 
 require (
