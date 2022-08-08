@@ -860,7 +860,7 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 				if strings.Contains(path, "@") {
 					sv := strings.SplitN(path, "@", 2)
 					if strings.Count(sv[1], "-") > 2 {
-						path = sv[0] + "/blob/master"
+						path = sv[0] + "/blob/main"
 					} else {
 						path = sv[0] + "/blob/" + sv[1]
 					}
@@ -873,7 +873,7 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 			cnt := 0
 			for _, path := range strings.Split(strings.SplitN(file, "go/src/", 2)[1], "/") {
 				if cnt == 3 {
-					path = "blob/master/" + path
+					path = "blob/main/" + path
 				}
 				fl += "/" + path
 				cnt++

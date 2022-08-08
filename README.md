@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 [![release](https://img.shields.io/github/release/kpango/glg.svg?style=flat-square)](https://github.com/kpango/glg/releases/latest)
 [![CircleCI](https://circleci.com/gh/kpango/glg.svg)](https://circleci.com/gh/kpango/glg)
-[![codecov](https://codecov.io/gh/kpango/glg/branch/master/graph/badge.svg?token=2CzooNJtUu&style=flat-square)](https://codecov.io/gh/kpango/glg)
+[![codecov](https://codecov.io/gh/kpango/glg/branch/main/graph/badge.svg?token=2CzooNJtUu&style=flat-square)](https://codecov.io/gh/kpango/glg)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/a6e544eee7bc49e08a000bb10ba3deed)](https://www.codacy.com/app/i.can.feel.gravity/glg?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=kpango/glg&amp;utm_campaign=Badge_Grade)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kpango/glg)](https://goreportcard.com/report/github.com/kpango/glg)
 [![GolangCI](https://golangci.com/badges/github.com/kpango/glg.svg?style=flat-square)](https://golangci.com/r/github.com/kpango/glg)
@@ -219,5 +219,5 @@ func main() {
 [kpango](https://github.com/kpango)
 
 ## LICENSE
-glg released under MIT license, refer [LICENSE](https://github.com/kpango/glg/blob/master/LICENSE) file.  
+glg released under MIT license, refer [LICENSE](https://github.com/kpango/glg/blob/main/LICENSE) file.  
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fkpango%2Fglg.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fkpango%2Fglg?ref=badge_large)
