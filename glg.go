@@ -1344,7 +1344,7 @@ func FailFunc(f func() string) error {
 func (g *Glg) Fatal(val ...interface{}) {
 	err := g.out(FATAL, g.blankFormat(len(val)), val...)
 	if err != nil {
-		err = g.Error(err.Error())
+		err = g.out(ERR, g.blankFormat(1), err.Error())
 		if err != nil {
 			panic(err)
 		}
@@ -1356,7 +1356,7 @@ func (g *Glg) Fatal(val ...interface{}) {
 func (g *Glg) Fatalln(val ...interface{}) {
 	err := g.out(FATAL, g.blankFormat(len(val)), val...)
 	if err != nil {
-		err = g.Error(err.Error())
+		err = g.out(ERR, g.blankFormat(1), err.Error())
 		if err != nil {
 			panic(err)
 		}
@@ -1368,7 +1368,7 @@ func (g *Glg) Fatalln(val ...interface{}) {
 func (g *Glg) Fatalf(format string, val ...interface{}) {
 	err := g.out(FATAL, format, val...)
 	if err != nil {
-		err = g.Error(err.Error())
+		err = g.out(ERR, g.blankFormat(1), err.Error())
 		if err != nil {
 			panic(err)
 		}
@@ -1378,17 +1378,38 @@ func (g *Glg) Fatalf(format string, val ...interface{}) {
 
 // Fatal outputs Failed log and exit program
 func Fatal(val ...interface{}) {
-	glg.Fatal(val...)
+	err := glg.out(FATAL, glg.blankFormat(len(val)), val...)
+	if err != nil {
+		err = glg.out(ERR, glg.blankFormat(1), err.Error())
+		if err != nil {
+			panic(err)
+		}
+	}
+	exit(1)
 }
 
 // Fatalf outputs formatted Failed log and exit program
 func Fatalf(format string, val ...interface{}) {
-	glg.Fatalf(format, val...)
+	err := glg.out(FATAL, format, val...)
+	if err != nil {
+		err = glg.out(ERR, glg.blankFormat(1), err.Error())
+		if err != nil {
+			panic(err)
+		}
+	}
+	exit(1)
 }
 
 // Fatalln outputs line fixed Failed log and exit program
 func Fatalln(val ...interface{}) {
-	glg.Fatalln(val...)
+	err := glg.out(FATAL, glg.blankFormat(len(val)), val...)
+	if err != nil {
+		err = glg.out(ERR, glg.blankFormat(1), err.Error())
+		if err != nil {
+			panic(err)
+		}
+	}
+	exit(1)
 }
 
 // ReplaceExitFunc replaces exit function.

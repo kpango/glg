@@ -265,6 +265,7 @@ func main() {
 
 	http.ListenAndServe(":8080", nil)
 
+	glg.Get().SetLineTraceMode(glg.TraceLineLong)
 	// fatal logging
 	glg.Fatalln("fatal")
 }
