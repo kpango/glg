@@ -1,17 +1,15 @@
 alias:
   default: &default
-    working_directory: /go/src/github.com/kpango/glg
     docker:
-      - image: circleci/go:1.19
+      - image: cimg/go:1.19.3
         environment:
-          GOPATH: "/go"
           GO111MODULE: "on"
           REPO_NAME: "kpango"
           IMAGE_NAME: "glg"
           GITHUB_API: "https://api.github.com/"
           DOCKER_USER: "kpango"
   setup_remote_docker: &setup_remote_docker
-    version: 19.03.4
+    version: 20.10.18
     docker_layer_caching: true
 
 version: 2
@@ -34,7 +32,7 @@ jobs:
             bash <(curl -s https://codecov.io/bash)
           no_output_timeout: 1.5h
       - store_artifacts:
-          path: ./coverage.html
+          gath: ./coverage.html
       - save_cache:
           key: gosum-{{ .Branch }}-{{ checksum "go.sum" }}
           paths:
