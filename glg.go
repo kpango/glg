@@ -528,6 +528,19 @@ func (g *Glg) addLevel(tag string, mode MODE, isColor bool, std io.Writer) *Glg 
 	return g
 }
 
+// SetTimeLocation configures specific time location
+func (g *Glg) SetTimeLocation(loc *time.Location) *Glg {
+	if loc != nil {
+		fastime.SetLocation(loc)
+	}
+	return g
+}
+
+// GetTimeLocation configures specific time location
+func (g *Glg) GetTimeLocation() (loc *time.Location) {
+	return fastime.GetLocation()
+}
+
 // EnableTimestamp enables timestamp output
 func (g *Glg) EnableTimestamp() *Glg {
 	g.logger.Range(func(lev LEVEL, l *logger) bool {
@@ -663,7 +676,6 @@ func (g *Glg) Atol(tag string) LEVEL {
 // Atol converts level string to Glg.LEVEL
 func Atol(tag string) LEVEL {
 	return glg.TagStringToLevel(tag)
-
 }
 
 // TagStringToLevel converts level string to Glg.LEVEL

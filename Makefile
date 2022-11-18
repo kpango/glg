@@ -52,6 +52,12 @@ cpu:
 mem:
 	go tool pprof --alloc_space pprof/glg-test.bin pprof/mem-glg.out
 
+format:
+	find ./ -type d -name .git -prune -o -type f -regex '.*[^\.pb]\.go' -print | xargs golines -w -m 200
+	find ./ -type d -name .git -prune -o -type f -regex '.*[^\.pb]\.go' -print | xargs gofumpt -w
+	find ./ -type d -name .git -prune -o -type f -regex '.*\.go' -print | xargs strictgoimports -w
+	find ./ -type d -name .git -prune -o -type f -regex '.*\.go' -print | xargs goimports -w
+
 lint:
 	gometalinter --enable-all . | rg -v comment
 

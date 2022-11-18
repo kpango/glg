@@ -954,7 +954,6 @@ func TestFileWriter(t *testing.T) {
 		want  string
 		isErr bool
 	}{
-
 		{
 			name:  "sample file log",
 			path:  "./sample.log",
