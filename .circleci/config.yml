@@ -1,7 +1,7 @@
 alias:
   default: &default
     docker:
-      - image: cimg/go:1.19.3
+      - image: cimg/go:1.20.2
         environment:
           GO111MODULE: "on"
           REPO_NAME: "kpango"
@@ -10,6 +10,7 @@ alias:
           DOCKER_USER: "kpango"
   setup_remote_docker: &setup_remote_docker
     version: 20.10.18
+    docker_layer_caching: true
 
 version: 2
 jobs:
@@ -26,13 +27,11 @@ jobs:
       - run:
           name: run tests
           command: |
-            rm -rf example
-            go test -v -timeout 1h -race -covermode=atomic -coverprofile=coverage.out ./...
+            go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
             go tool cover -html=coverage.out -o coverage.html
             bash <(curl -s https://codecov.io/bash)
-          no_output_timeout: 1.5h
       - store_artifacts:
-          gath: ./coverage.html
+          path: ./coverage.html
       - save_cache:
           key: gosum-{{ .Branch }}-{{ checksum "go.sum" }}
           paths:
@@ -46,8 +45,9 @@ jobs:
           command: |
             mkdir -p $HOME/.ssh/ && echo -e "Host github.com\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
             LAST_COMMIT=`git log -1 --pretty=%B`
+            VERSION=`git describe --abbrev=0 --tags`
             touch ./.tag
-            if VERSION=`git describe --abbrev=0 --tags` && [ ! -z "`git diff $VERSION`" -o -z "$VERSION" ]; then
+            if [ ! -z "`git diff $VERSION`" -o -z "$VERSION" ]; then
               VERSION=${VERSION:-'0.0.0'}
               MAJOR="${VERSION%%.*}"; VERSION="${VERSION#*.}"
               MINOR="${VERSION%%.*}"; VERSION="${VERSION#*.}"
@@ -61,14 +61,6 @@ jobs:
               elif echo $LAST_COMMIT | grep "\[\(patch\|PATCH\)\]" > /dev/null; then
                 PATCH=$((PATCH+1))
                 echo "$MAJOR.$MINOR.$PATCH" > ./.tag
-              fi
-            else
-              if echo $LAST_COMMIT | grep "\[\(major\|MAJOR\)\]" > /dev/null; then
-                echo "v1.0.0" > ./.tag
-              elif echo $LAST_COMMIT | grep "\[\(minor\|MINOR\)\]" > /dev/null; then
-                echo "v0.1.0" > ./.tag
-              elif echo $LAST_COMMIT | grep "\[\(patch\|PATCH\)\]" > /dev/null; then
-                echo "v0.0.1" > ./.tag
               fi
             fi
       - persist_to_workspace:
@@ -121,7 +113,7 @@ workflows:
           filters:
             branches:
               only:
-                - main
+                - master
       - push:
           requires:
             - versioning

@@ -1,12 +1,12 @@
 module github.com/kpango/glg
 
-go 1.19
+go 1.20
 
 require (
-	github.com/goccy/go-json v0.9.11
-	github.com/kpango/fastime v1.1.6
+	github.com/goccy/go-json v0.10.2
+	github.com/kpango/fastime v1.1.9
 	github.com/sirupsen/logrus v1.9.0
-	go.uber.org/zap v1.23.0
+	go.uber.org/zap v1.24.0
 )
 
 require (
