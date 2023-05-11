@@ -318,6 +318,7 @@ func Get() *Glg {
 	once.Do(func() {
 		fastime.SetFormat(timeFormat)
 		glg = New()
+		glg.SetTimeLocation(time.Local)
 	})
 	return glg
 }
