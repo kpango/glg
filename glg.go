@@ -309,7 +309,7 @@ func New() *Glg {
 		log.updateMode()
 		g.logger.Store(lev, log)
 	}
-
+	g.SetTimeLocation(time.Local)
 	return g
 }
 
@@ -318,7 +318,6 @@ func Get() *Glg {
 	once.Do(func() {
 		fastime.SetFormat(timeFormat)
 		glg = New()
-		glg.SetTimeLocation(time.Local)
 	})
 	return glg
 }
