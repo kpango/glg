@@ -25,8 +25,10 @@ package glg
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"math"
 	"net/http"
 	"os"
@@ -715,39 +717,89 @@ func TagStringToLevel(tag string) LEVEL {
 	return glg.TagStringToLevel(tag)
 }
 
-// FileWriter generates *osFile -> io.Writer
-func FileWriter(path string, perm os.FileMode) *os.File {
+func OpenFile(path string, flg int, perm fs.FileMode) (file *os.File, err error) {
 	if path == "" {
-		return nil
+		return nil, errors.New("file path argument must not be empty")
 	}
 
-	var err error
-	var file *os.File
-	if _, err = os.Stat(path); err != nil {
-		if _, err = os.Stat(filepath.Dir(path)); err != nil {
-			err = os.MkdirAll(filepath.Dir(path), perm)
+	defer func() {
+		if err != nil && file != nil {
+			err = errors.Join(file.Close(), err)
+			file = nil
+		}
+	}()
+	if ffi, err := os.Stat(path); err != nil {
+		dir := filepath.Dir(path)
+		fi, err := os.Stat(dir)
+		if err != nil {
+			err = os.MkdirAll(dir, perm)
 			if err != nil {
-				return nil
+				err = fmt.Errorf("failed to make directory %s using os.MkdirAll operation\tdir info: %s: %w", dir, fitos(dir, fi), err)
+				return nil, err
 			}
 		}
-		file, err = os.Create(path)
-		if err != nil {
-			return nil
-		}
 
-		err = file.Close()
-		if err != nil {
-			return nil
+		if flg&(os.O_CREATE|os.O_APPEND) > 0 {
+			file, err = os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_EXCL|os.O_TRUNC, perm)
+			if err != nil {
+				err = fmt.Errorf("failed to create file %s using os.Create operation\tfile info: %s: %w", path, fitos(path, ffi), err)
+				if file != nil {
+					return nil, errors.Join(err, file.Close())
+				}
+				return nil, err
+			}
+			if file != nil {
+				err = file.Close()
+				if err != nil {
+					fi, ferr := file.Stat()
+					if ferr == nil && fi != nil {
+						return nil, fmt.Errorf("failed to close file %s\tfile info: %s: %w", path, fitos(path, fi), err)
+					}
+					return nil, errors.Join(err, ferr)
+				}
+			}
 		}
 	}
 
-	file, err = os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, perm)
+	file, err = os.OpenFile(path, flg, perm)
+	if err != nil {
+		err = fmt.Errorf("failed to open file %s using os.OpenFile operation with configuration, flg: %d, perm: %s\tfile info: %s: %w", path, flg, perm.String(), fitos(path, nil), err)
+		if file != nil {
+			return nil, errors.Join(err, file.Close())
+		}
+		return nil, err
+	}
 
+	return file, nil
+}
+
+func fitos(path string, fi os.FileInfo) string {
+	if fi == nil {
+		var err error
+		fi, err = os.Stat(path)
+		if err != nil || fi == nil {
+			return fmt.Sprintf("unknown file info: for %s\t%v", path, fi)
+		}
+	}
+	if fi != nil {
+		return fmt.Sprintf("{name: %s, size: %d, mode: %s, mode_int: %d, is_dir: %v}",
+			fi.Name(),
+			fi.Size(),
+			fi.Mode().String(),
+			fi.Mode(),
+			fi.IsDir(),
+		)
+	}
+	return fmt.Sprintf("unknown file info: %v", fi)
+}
+
+// FileWriter generates *osFile -> io.Writer
+func FileWriter(path string, perm os.FileMode) *os.File {
+	f, err := OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, perm)
 	if err != nil {
 		return nil
 	}
-
-	return file
+	return f
 }
 
 // HTTPLogger is simple http access logger
@@ -790,54 +842,58 @@ func Colorless(str string) string {
 	return str
 }
 
+func colorString(code, str string) string {
+	return "\033["+code+"m" + str + "\033[39m"
+}
+
 // Red returns red colored string
 func Red(str string) string {
-	return "\033[31m" + str + "\033[39m"
+	return colorString("31", str)
 }
 
 // Green returns green colored string
 func Green(str string) string {
-	return "\033[32m" + str + "\033[39m"
+	return colorString("32", str)
 }
 
 // Orange returns orange colored string
 func Orange(str string) string {
-	return "\033[33m" + str + "\033[39m"
+	return colorString("33", str)
 }
 
 // Purple returns purple colored string
 func Purple(str string) string {
-	return "\033[34m" + str + "\033[39m"
+	return colorString("34", str)
 }
 
 // Cyan returns cyan colored string
 func Cyan(str string) string {
-	return "\033[36m" + str + "\033[39m"
+	return colorString("36", str)
 }
 
 // Yellow returns yellow colored string
 func Yellow(str string) string {
-	return "\033[93m" + str + "\033[39m"
+	return colorString("93", str)
 }
 
 // Brown returns Brown colored string
 func Brown(str string) string {
-	return "\033[96m" + str + "\033[39m"
+	return colorString("96", str)
 }
 
 // Gray returns Gray colored string
 func Gray(str string) string {
-	return "\033[90m" + str + "\033[39m"
+	return colorString("90", str)
 }
 
 // Black returns Black colored string
 func Black(str string) string {
-	return "\033[30m" + str + "\033[39m"
+	return colorString("30", str)
 }
 
 // White returns white colored string
 func White(str string) string {
-	return "\033[97m" + str + "\033[39m"
+	return colorString("97", str)
 }
 
 func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
@@ -869,12 +925,12 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		case strings.Contains(file, "go/pkg/mod/"):
 			fl = "https:/"
 			for _, path := range strings.Split(strings.SplitN(file, "go/pkg/mod/", 2)[1], "/") {
-				if strings.Contains(path, "@") {
-					sv := strings.SplitN(path, "@", 2)
-					if strings.Count(sv[1], "-") > 2 {
-						path = sv[0] + "/blob/main"
+				left, right, ok := strings.Cut(path, "@")
+				if ok {
+					if strings.Count(right, "-") > 2 {
+						path = left + "/blob/main"
 					} else {
-						path = sv[0] + "/blob/" + sv[1]
+						path = left + "/blob/" + right
 					}
 				}
 				fl += "/" + path
