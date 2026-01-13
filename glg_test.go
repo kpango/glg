@@ -4410,13 +4410,46 @@ func TestGlg_EnableLevelTimestamp(t *testing.T) {
 	type args struct {
 		lv LEVEL
 	}
+
+	createFields := func(disableTimestamp bool) fields {
+		g := New()
+		if disableTimestamp {
+			g.DisableTimestamp()
+		}
+		return fields{
+			bs:           g.bs,
+			logger:       g.logger,
+			levelCounter: g.levelCounter,
+			levelMap:     g.levelMap,
+			buffer:       g.buffer,
+			enableJSON:   g.enableJSON,
+		}
+	}
+
 	tests := []struct {
 		name   string
 		fields fields
 		args   args
-		want   *Glg
+		want   bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:   "Enable INFO timestamp",
+			fields: createFields(true),
+			args:   args{lv: INFO},
+			want:   false,
+		},
+		{
+			name:   "Enable WARN timestamp",
+			fields: createFields(true),
+			args:   args{lv: WARN},
+			want:   false,
+		},
+		{
+			name:   "Already enabled",
+			fields: createFields(false),
+			args:   args{lv: INFO},
+			want:   false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -4428,8 +4461,13 @@ func TestGlg_EnableLevelTimestamp(t *testing.T) {
 				buffer:       tt.fields.buffer,
 				enableJSON:   tt.fields.enableJSON,
 			}
-			if got := g.EnableLevelTimestamp(tt.args.lv); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Glg.EnableLevelTimestamp() = %v, want %v", got, tt.want)
+			g.EnableLevelTimestamp(tt.args.lv)
+			l, ok := g.logger.Load(tt.args.lv)
+			if !ok {
+				t.Errorf("logger not found")
+			}
+			if l.disableTimestamp != tt.want {
+				t.Errorf("Glg.EnableLevelTimestamp() disableTimestamp = %v, want %v", l.disableTimestamp, tt.want)
 			}
 		})
 	}
