@@ -4436,36 +4436,39 @@ func TestGlg_EnableLevelTimestamp(t *testing.T) {
 }
 
 func TestGlg_DisableLevelTimestamp(t *testing.T) {
-	type fields struct {
-		bs           *uint64
-		logger       loggers
-		levelCounter *uint32
-		levelMap     levelMap
-		buffer       sync.Pool
-		enableJSON   bool
-	}
-	type args struct {
-		lv LEVEL
-	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   *Glg
+		name  string
+		glg   *Glg
+		want  bool
+		level LEVEL
 	}{
-		// TODO: Add test cases.
+		{
+			name:  "Disable timestamp INFO",
+			glg:   New().EnableTimestamp(),
+			want:  true,
+			level: INFO,
+		},
+		{
+			name:  "Disable timestamp WARN",
+			glg:   New().EnableTimestamp(),
+			want:  true,
+			level: WARN,
+		},
+		{
+			name:  "Disable timestamp ERR",
+			glg:   New().EnableTimestamp(),
+			want:  true,
+			level: ERR,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			g := &Glg{
-				bs:           tt.fields.bs,
-				logger:       tt.fields.logger,
-				levelCounter: tt.fields.levelCounter,
-				levelMap:     tt.fields.levelMap,
-				buffer:       tt.fields.buffer,
-				enableJSON:   tt.fields.enableJSON,
+			l, ok := tt.glg.DisableLevelTimestamp(tt.level).logger.Load(tt.level)
+			if !ok {
+				t.Error("glg instance not found")
 			}
-			if got := g.DisableLevelTimestamp(tt.args.lv); !reflect.DeepEqual(got, tt.want) {
+			got := l.disableTimestamp
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Glg.DisableLevelTimestamp() = %v, want %v", got, tt.want)
 			}
 		})
