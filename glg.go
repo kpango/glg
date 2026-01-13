@@ -163,6 +163,8 @@ var (
 
 	// exit for Faltal error
 	exit = os.Exit
+
+	repoCache sync.Map
 )
 
 func init() {
@@ -843,7 +845,7 @@ func Colorless(str string) string {
 }
 
 func colorString(code, str string) string {
-	return "\033["+code+"m" + str + "\033[39m"
+	return "\033[" + code + "m" + str + "\033[39m"
 }
 
 // Red returns red colored string
@@ -923,19 +925,24 @@ func (g *Glg) out(level LEVEL, format string, val ...interface{}) error {
 		case strings.HasPrefix(file, runtime.GOROOT()+"/src"):
 			fl = "https://github.com/golang/go/blob/" + runtime.Version() + strings.TrimPrefix(file, runtime.GOROOT()) + "#L" + strconv.Itoa(line)
 		case strings.Contains(file, "go/pkg/mod/"):
-			fl = "https:/"
-			for _, path := range strings.Split(strings.SplitN(file, "go/pkg/mod/", 2)[1], "/") {
-				left, right, ok := strings.Cut(path, "@")
-				if ok {
-					if strings.Count(right, "-") > 2 {
-						path = left + "/blob/main"
-					} else {
-						path = left + "/blob/" + right
+			if val, ok := repoCache.Load(file); ok {
+				fl = val.(string) + "#L" + strconv.Itoa(line)
+			} else {
+				fl = "https:/"
+				for _, path := range strings.Split(strings.SplitN(file, "go/pkg/mod/", 2)[1], "/") {
+					left, right, ok := strings.Cut(path, "@")
+					if ok {
+						if strings.Count(right, "-") > 2 {
+							path = left + "/blob/main"
+						} else {
+							path = left + "/blob/" + right
+						}
 					}
+					fl += "/" + path
 				}
-				fl += "/" + path
+				repoCache.Store(file, fl)
+				fl += "#L" + strconv.Itoa(line)
 			}
-			fl += "#L" + strconv.Itoa(line)
 		case strings.Contains(file, "go/src"):
 			fl = "https:/"
 			cnt := 0
