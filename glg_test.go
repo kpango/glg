@@ -4510,6 +4510,7 @@ func TestGlg_blankFormat(t *testing.T) {
 }
 
 func Test_isModeEnable(t *testing.T) {
+	Reset()
 	type args struct {
 		l LEVEL
 	}
@@ -4518,7 +4519,83 @@ func Test_isModeEnable(t *testing.T) {
 		args args
 		want bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "DEBG",
+			args: args{
+				l: DEBG,
+			},
+			want: true,
+		},
+		{
+			name: "TRACE",
+			args: args{
+				l: TRACE,
+			},
+			want: true,
+		},
+		{
+			name: "PRINT",
+			args: args{
+				l: PRINT,
+			},
+			want: true,
+		},
+		{
+			name: "LOG",
+			args: args{
+				l: LOG,
+			},
+			want: true,
+		},
+		{
+			name: "INFO",
+			args: args{
+				l: INFO,
+			},
+			want: true,
+		},
+		{
+			name: "OK",
+			args: args{
+				l: OK,
+			},
+			want: true,
+		},
+		{
+			name: "WARN",
+			args: args{
+				l: WARN,
+			},
+			want: true,
+		},
+		{
+			name: "ERR",
+			args: args{
+				l: ERR,
+			},
+			want: true,
+		},
+		{
+			name: "FAIL",
+			args: args{
+				l: FAIL,
+			},
+			want: true,
+		},
+		{
+			name: "FATAL",
+			args: args{
+				l: FATAL,
+			},
+			want: true,
+		},
+		{
+			name: "UNKNOWN",
+			args: args{
+				l: UNKNOWN,
+			},
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
