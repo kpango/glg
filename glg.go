@@ -1503,14 +1503,13 @@ func (g *Glg) blankFormat(l int) string {
 	if g.enableJSON {
 		return ""
 	}
+	if l == 0 {
+		return ""
+	}
 	if dfl > l {
 		return df[:l*3-1]
 	}
-	format := df
-	for c := l / dfl; c >= 0; c-- {
-		format += df
-	}
-	return format[:l*3-1]
+	return strings.Repeat(df, (l+dfl-1)/dfl)[:l*3-1]
 }
 
 // isModeEnable returns the level has already turned on the logging
