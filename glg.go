@@ -814,14 +814,16 @@ func (g *Glg) HTTPLoggerFunc(name string, hf http.HandlerFunc) http.Handler {
 
 		hf(w, r)
 
-		start -= fastime.UnixNanoNow()
+		if g.GetCurrentMode(LOG) != NONE {
+			start -= fastime.UnixNanoNow()
 
-		err := g.Logf("Method: %s\tURI: %s\tName: %s\tTime: %s",
-			r.Method, r.RequestURI, name, (*(*time.Duration)(unsafe.Pointer(&start))).String())
-		if err != nil {
-			err = g.Error(err)
+			err := g.Logf("Method: %s\tURI: %s\tName: %s\tTime: %s",
+				r.Method, r.RequestURI, name, (*(*time.Duration)(unsafe.Pointer(&start))).String())
 			if err != nil {
-				fmt.Println(err)
+				err = g.Error(err)
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 		}
 	})
