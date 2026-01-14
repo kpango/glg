@@ -4547,7 +4547,72 @@ func TestGlg_isModeEnable(t *testing.T) {
 		args   args
 		want   bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "enable std mode",
+			fields: fields{
+				logger: func() loggers {
+					l := loggers{}
+					l.Store(INFO, &logger{mode: STD})
+					return l
+				}(),
+			},
+			args: args{
+				l: INFO,
+			},
+			want: true,
+		},
+		{
+			name: "enable writer mode",
+			fields: fields{
+				logger: func() loggers {
+					l := loggers{}
+					l.Store(INFO, &logger{mode: WRITER})
+					return l
+				}(),
+			},
+			args: args{
+				l: INFO,
+			},
+			want: true,
+		},
+		{
+			name: "enable both mode",
+			fields: fields{
+				logger: func() loggers {
+					l := loggers{}
+					l.Store(INFO, &logger{mode: BOTH})
+					return l
+				}(),
+			},
+			args: args{
+				l: INFO,
+			},
+			want: true,
+		},
+		{
+			name: "disable mode",
+			fields: fields{
+				logger: func() loggers {
+					l := loggers{}
+					l.Store(INFO, &logger{mode: NONE})
+					return l
+				}(),
+			},
+			args: args{
+				l: INFO,
+			},
+			want: false,
+		},
+		{
+			name: "unknown level",
+			fields: fields{
+				logger: loggers{},
+			},
+			args: args{
+				l: INFO,
+			},
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
